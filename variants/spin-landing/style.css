@@ -1,0 +1,742 @@
+/* =========================================================
+   EGD — product design · accessibility · craft
+   Bold editorial system. Swap colours in :root to re-theme.
+   ========================================================= */
+:root{
+  --bg:#efeeec;          /* warm paper            */
+  --paper:#ffffff;
+  --ink:#14141c;         /* near-black text       */
+  --muted:#6b6c82;
+  --line:#dddcd7;
+  --royal:#2340c8;       /* primary accent        */
+  --royal-soft:#e3e6fb;
+  /* category signals */
+  --c-medical:#2340c8;   /* medical & accessibility */
+  --c-wood:#b5623a;      /* woodwork                */
+  --c-graphic:#6b4de6;   /* graphic                 */
+  --maxw:1180px;
+  --pad:clamp(20px,5vw,72px);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --radius:16px;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:clip;
+}
+a{color:inherit;text-decoration:none;}
+img{max-width:100%;display:block;}
+button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
+::selection{background:var(--royal);color:#fff;}
+
+h1,h2,h3,h4{font-family:"Space Grotesk","Inter",sans-serif;font-weight:600;letter-spacing:-0.02em;line-height:1.02;margin:0;}
+h1{font-size:clamp(2.6rem,8vw,6.4rem);}
+h2{font-size:clamp(1.9rem,4.4vw,3.4rem);}
+h3{font-size:clamp(1.2rem,2vw,1.5rem);letter-spacing:-0.01em;}
+p{margin:0 0 1em;}
+.lead{font-size:clamp(1.12rem,2vw,1.5rem);color:var(--muted);max-width:56ch;line-height:1.5;}
+
+/* mono labels — the "spec sheet" product-design voice */
+.eyebrow,.mono{
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:400;
+}
+.eyebrow{color:var(--royal);display:inline-flex;align-items:center;gap:.6em;margin-bottom:1.4rem;}
+.eyebrow::before{content:"";width:26px;height:1px;background:currentColor;display:inline-block;}
+
+/* =========================================================
+   Layout
+   ========================================================= */
+.wrap{max-width:var(--maxw);margin:0 auto;padding-left:var(--pad);padding-right:var(--pad);}
+section{padding:clamp(72px,11vw,150px) 0;}
+.page-top{padding-top:clamp(130px,20vh,220px);}
+
+/* grain / texture overlay */
+.grain{
+  position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.5;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   Custom cursor (bold)
+   ========================================================= */
+.cursor-dot,.cursor-ring{
+  position:fixed;top:0;left:0;z-index:9999;pointer-events:none;border-radius:50%;
+  transform:translate(-50%,-50%);will-change:transform;
+}
+.cursor-dot{width:7px;height:7px;background:var(--royal);}
+.cursor-ring{
+  width:38px;height:38px;border:1.5px solid rgba(35,64,200,.55);
+  transition:width .25s var(--ease),height .25s var(--ease),background .25s,border-color .25s,opacity .25s;
+}
+.cursor-ring.is-hover{width:64px;height:64px;background:rgba(35,64,200,.10);border-color:transparent;}
+.cursor-ring.is-label{width:78px;height:78px;background:var(--royal);border-color:transparent;}
+.cursor-ring .clabel{
+  color:#fff;font-family:"Space Mono",monospace;font-size:.62rem;letter-spacing:.1em;
+  opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center;
+  width:100%;height:100%;text-transform:uppercase;
+}
+.cursor-ring.is-label .clabel{opacity:1;}
+body.cursor-on{cursor:none;}
+body.cursor-on a,body.cursor-on button,body.cursor-on .card{cursor:none;}
+@media(hover:none),(pointer:coarse){.cursor-dot,.cursor-ring{display:none;}body.cursor-on{cursor:auto;}}
+
+/* =========================================================
+   Header / nav
+   ========================================================= */
+.site-header{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px var(--pad);
+  transition:transform .4s var(--ease),background .3s,backdrop-filter .3s,border-color .3s;
+  border-bottom:1px solid transparent;
+}
+.site-header.scrolled{background:rgba(239,238,236,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-color:var(--line);}
+.site-header.hide{transform:translateY(-105%);}
+/* while the mobile menu is open the header must NOT create a containing block
+   (transform / backdrop-filter would trap the fullscreen fixed nav overlay) */
+body.nav-open .site-header{transform:none!important;background:transparent!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-color:transparent!important;}
+.brand-lockup{display:flex;align-items:center;gap:14px;min-width:0;}
+/* --logo-h is the one number to tune */
+.brand{
+  --logo-h:53px;   /* 38px + 40% */
+  position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  height:var(--logo-h);width:calc(var(--logo-h)*1.347);   /* the logo art's own 640:475 ratio */
+}
+/* the logo art is white, so it needs its blue pool behind it to read */
+.brand-logo{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;display:block;}
+/* the blue faded surround. masked so the shimmer fades out with it instead of
+   revealing a hard ellipse edge. no blend modes — they wreck compositing over the field. */
+.brand-glow{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:170%;height:185%;border-radius:50%;pointer-events:none;
+  background:
+    linear-gradient(115deg,transparent 32%,rgba(180,218,255,.55) 48%,transparent 64%) 0 0/260% 100% no-repeat,
+    radial-gradient(closest-side,#3050dd 0%,#2340c8 50%,rgba(35,64,200,.55) 72%,rgba(35,64,200,0) 100%);
+  -webkit-mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  animation:brand-shimmer 2.6s linear infinite;
+  animation-play-state:paused;                 /* only shimmers on hover */
+  transition:transform .4s var(--ease);
+}
+.brand:hover .brand-glow{animation-play-state:running;transform:translate(-50%,-50%) scale(1.06);}
+@keyframes brand-shimmer{
+  from{background-position:-160% 0, 0 0;}
+  to{background-position:160% 0, 0 0;}
+}
+.brand-role{font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--royal);white-space:nowrap;}
+@media(max-width:420px){.brand-role{display:none;}}
+@media(prefers-reduced-motion:reduce){.brand-glow{animation:none!important;}}
+.nav{display:flex;align-items:center;gap:clamp(18px,3vw,40px);font-size:.95rem;font-weight:500;}
+.nav a{position:relative;padding:6px 0;opacity:.72;transition:opacity .2s;}
+.nav a::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--royal);
+  transform:scaleX(0);transform-origin:right;transition:transform .35s var(--ease);}
+.nav a:hover,.nav a.active{opacity:1;}
+.nav a:hover::after,.nav a.active::after{transform:scaleX(1);transform-origin:left;}
+.nav-toggle{display:none;}
+@media(max-width:720px){
+  .nav-toggle{display:flex;flex-direction:column;gap:5px;padding:8px;z-index:61;}
+  .nav-toggle span{width:26px;height:2px;background:var(--ink);transition:transform .3s var(--ease),opacity .2s;}
+  .nav-toggle.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  .nav-toggle.open span:nth-child(2){opacity:0;}
+  .nav-toggle.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+  /* visibility/opacity (not just transform) hide this: the header's backdrop-filter can become the
+     containing block for position:fixed, which would leave the closed menu peeking over the page */
+  .nav{
+    position:fixed;inset:0;flex-direction:column;justify-content:center;gap:28px;
+    background:var(--bg);font-size:1.6rem;font-family:"Space Grotesk",sans-serif;
+    transform:translateY(-100%);visibility:hidden;opacity:0;pointer-events:none;
+    transition:transform .5s var(--ease),opacity .3s ease,visibility 0s linear .5s;
+  }
+  .nav.open{
+    transform:translateY(0);visibility:visible;opacity:1;pointer-events:auto;
+    transition:transform .5s var(--ease),opacity .3s ease,visibility 0s;
+  }
+  .nav a{opacity:1;}
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+.btn{
+  display:inline-flex;align-items:center;gap:.7em;
+  font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:1rem;
+  padding:15px 30px;border-radius:999px;transition:transform .25s var(--ease),background .25s,color .25s;
+  will-change:transform;
+}
+.btn .arrow{transition:transform .3s var(--ease);}
+.btn:hover .arrow{transform:translateX(5px);}
+.btn-primary{background:var(--ink);color:var(--bg);}
+.btn-primary:hover{background:var(--royal);color:#fff;}
+.btn-ghost{border:1.5px solid var(--ink);}
+.btn-ghost:hover{background:var(--ink);color:var(--bg);}
+
+/* =========================================================
+   Hero (home)
+   ========================================================= */
+/* now just a spacer of bare field between the photo wall and the flowers.
+   padding:0 is required — the generic section padding (72px top+bottom) is taller than 3cm
+   and would win, making the gap 144px instead of 113px. */
+.hero{position:relative;z-index:1;height:3cm;min-height:0;padding:0;}
+
+/* =========================================================
+   Reveal-on-scroll utility
+   ========================================================= */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .8s var(--ease),transform .8s var(--ease);}
+.reveal.is-in{opacity:1;transform:none;}
+.reveal-line{overflow:hidden;}
+.reveal-line>*{display:inline-block;transform:translateY(105%);transition:transform .9s var(--ease);}
+.reveal-line.is-in>*{transform:none;}
+
+/* discipline chips (still used on About) */
+.chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+.chip{
+  display:inline-flex;align-items:center;gap:.5em;border:1px solid var(--line);border-radius:999px;
+  padding:9px 18px;font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;background:var(--paper);
+}
+.chip .dot{width:8px;height:8px;border-radius:50%;}
+
+/* =========================================================
+   Marquee
+   ========================================================= */
+.marquee{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:26px 0;overflow:hidden;white-space:nowrap;user-select:none;
+}
+.marquee-track{display:inline-flex;gap:0;animation:scroll-x 26s linear infinite;will-change:transform;}
+.marquee:hover .marquee-track{animation-play-state:paused;}
+.marquee-track span{font-family:"Space Grotesk",sans-serif;font-weight:600;
+  font-size:clamp(1.6rem,4vw,2.8rem);letter-spacing:-.02em;padding:0 34px;display:inline-flex;align-items:center;gap:34px;}
+.marquee-track span::after{content:"✦";color:var(--royal);font-size:.7em;}
+@keyframes scroll-x{to{transform:translateX(-50%);}}
+
+/* =========================================================
+   Work grid + cards
+   ========================================================= */
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin:40px 0 8px;}
+.filter{
+  font-family:"Space Mono",monospace;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:10px 18px;border-radius:999px;border:1px solid var(--line);background:transparent;
+  transition:background .25s,color .25s,border-color .25s;
+}
+.filter .n{opacity:.5;margin-left:.5em;}
+.filter:hover{border-color:var(--ink);}
+.filter.active{background:var(--ink);color:var(--bg);border-color:var(--ink);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:clamp(20px,3vw,40px);margin-top:44px;}
+.card{
+  position:relative;display:block;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;
+  transition:transform .5s var(--ease),box-shadow .5s var(--ease),opacity .5s,filter .4s;
+}
+.card.hide{display:none;}
+.card:hover{transform:translateY(-6px);box-shadow:0 30px 60px -30px rgba(20,20,40,.4);}
+.card .poster{position:relative;aspect-ratio:4/3;overflow:hidden;background:#e9e8e4;}
+.card .poster svg{position:absolute;inset:0;width:100%;height:100%;transition:transform .7s var(--ease);}
+.card:hover .poster svg{transform:scale(1.05);}
+.card .index{
+  position:absolute;top:16px;left:18px;font-family:"Space Mono",monospace;font-size:.72rem;
+  letter-spacing:.1em;color:#fff;mix-blend-mode:difference;z-index:2;
+}
+.card .tagpill{
+  position:absolute;top:14px;right:16px;z-index:2;font-family:"Space Mono",monospace;
+  font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:#fff;
+  padding:6px 11px;border-radius:999px;backdrop-filter:blur(4px);background:rgba(20,20,30,.5);
+}
+.card .meta{padding:22px 24px 26px;}
+.card .meta .cat{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:.5em;}
+.card .meta .cat .dot{width:8px;height:8px;border-radius:50%;}
+.card .meta h3{margin-bottom:6px;}
+.card .meta .blurb{color:var(--muted);font-size:.95rem;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card .view{margin-top:16px;font-family:"Space Mono",monospace;font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--royal);display:inline-flex;gap:.5em;align-items:center;}
+.card .view .arrow{transition:transform .3s var(--ease);}
+.card:hover .view .arrow{transform:translateX(5px);}
+
+/* =========================================================
+   Project modal (case study)
+   ========================================================= */
+.modal{
+  position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;
+  visibility:hidden;pointer-events:none;
+}
+.modal.open{visibility:visible;pointer-events:auto;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(15,15,25,.5);opacity:0;transition:opacity .4s;backdrop-filter:blur(2px);}
+.modal.open .modal-backdrop{opacity:1;}
+.modal-panel{
+  position:relative;width:min(680px,100%);height:100%;background:var(--bg);overflow-y:auto;
+  transform:translateX(100%);transition:transform .6s var(--ease);box-shadow:-30px 0 80px -30px rgba(0,0,0,.4);
+}
+.modal.open .modal-panel{transform:none;}
+.modal-close{
+  position:sticky;top:0;float:right;margin:18px 18px 0 0;z-index:3;
+  width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:transform .3s var(--ease),background .3s;
+}
+.modal-close:hover{transform:rotate(90deg);background:var(--royal);}
+.modal-hero{aspect-ratio:16/10;position:relative;overflow:hidden;background:#e9e8e4;}
+.modal-hero svg{position:absolute;inset:0;width:100%;height:100%;}
+.modal-body{padding:clamp(28px,5vw,52px);}
+.modal-body .cat{font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:.5em;margin-bottom:16px;}
+.modal-body .cat .dot{width:9px;height:9px;border-radius:50%;}
+.modal-body h2{margin-bottom:10px;}
+.modal-body .subtitle{color:var(--muted);font-size:1.15rem;margin-bottom:34px;}
+.spec{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 30px;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);padding:26px 0;margin-bottom:34px;}
+.spec dt{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.spec dd{margin:0;font-weight:500;}
+.case-block{margin-bottom:30px;}
+.case-block h4{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--royal);margin-bottom:12px;}
+.case-block p{color:#33333f;}
+.tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px;}
+.tags span{border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:.8rem;color:var(--muted);}
+.modal-note{margin-top:30px;padding:16px 18px;border-radius:12px;background:var(--royal-soft);
+  font-size:.85rem;color:#33406b;font-family:"Space Mono",monospace;letter-spacing:.02em;line-height:1.5;}
+
+/* case-study gallery (in the modal) — click any image to enlarge */
+.case-gallery{display:grid;grid-template-columns:1fr;gap:clamp(14px,2.2vw,24px);margin:34px 0 6px;}
+@media(min-width:560px){.case-gallery{grid-template-columns:1fr 1fr;}}
+.case-gallery figure{margin:0;}
+/* feature = a large, full-width image (the two Stride A1 product shots) */
+.case-gallery figure.cg-feature{grid-column:1 / -1;}
+.case-gallery figure.cg-feature img{border-radius:14px;}
+.case-gallery img{
+  width:100%;height:auto;display:block;border-radius:12px;background:#efeeea;cursor:zoom-in;
+  box-shadow:0 16px 38px -22px rgba(20,20,45,.42);
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+}
+.case-gallery img:hover{transform:translateY(-3px);box-shadow:0 26px 52px -22px rgba(20,20,45,.5);}
+.case-gallery figcaption{margin-top:9px;font-size:.8rem;line-height:1.4;color:var(--muted);}
+
+/* full-screen image viewer */
+.lightbox{
+  position:fixed;inset:0;z-index:2000;display:none;place-items:center;
+  background:rgba(12,12,22,.92);padding:clamp(16px,4vw,64px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.lightbox.open{display:grid;}
+.lightbox img{max-width:100%;max-height:84vh;object-fit:contain;border-radius:8px;box-shadow:0 30px 90px rgba(0,0,0,.55);}
+.lb-cap{position:absolute;left:0;right:0;bottom:clamp(14px,3vh,30px);margin:0;text-align:center;
+  color:rgba(255,255,255,.86);font-size:.82rem;padding:0 24px;font-family:"Space Mono",monospace;letter-spacing:.02em;}
+.lb-close{
+  position:absolute;top:clamp(12px,3vh,26px);right:clamp(12px,3vw,30px);width:44px;height:44px;
+  border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:1.05rem;
+  cursor:pointer;display:grid;place-items:center;transition:background .25s;
+}
+.lb-close:hover{background:rgba(255,255,255,.3);}
+@media(prefers-reduced-motion:reduce){.case-gallery img{transition:none;}.case-gallery img:hover{transform:none;}}
+
+/* =========================================================
+   Dark capabilities / CTA band
+   ========================================================= */
+.band{background:var(--ink);color:var(--bg);}
+.band .eyebrow{color:#8ea2ff;}
+.band .muted{color:#9a9ab0;}
+.cap-grid{display:grid;grid-template-columns:1fr;gap:1px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);overflow:hidden;margin-top:50px;}
+@media(min-width:760px){.cap-grid{grid-template-columns:repeat(3,1fr);}}
+.cap{background:var(--ink);padding:34px 30px;transition:background .3s;}
+.cap:hover{background:#1e1e2c;}
+.cap .num{font-family:"Space Mono",monospace;font-size:.72rem;color:#8ea2ff;letter-spacing:.1em;margin-bottom:18px;}
+.cap h3{margin-bottom:10px;color:#fff;}
+.cap p{color:#9a9ab0;font-size:.95rem;margin:0;}
+
+/* padding-bottom trimmed so the blue stops just under the button instead of
+   carrying on as a bar above the footer */
+/* symmetric padding — the section default is top-heavy, which pushed the button below centre */
+.cta{background:#fff;color:var(--ink);text-align:center;padding:clamp(56px,7vw,96px) 0;}
+.cta h2{max-width:16ch;margin:0 auto 26px;}
+/* the button was white-on-royal; on a white panel it needs to invert or it disappears */
+.cta .btn-primary{background:var(--royal);color:#fff;}
+.cta .btn-primary:hover{background:var(--ink);color:#fff;}
+
+/* =========================================================
+   About
+   ========================================================= */
+.about-grid{display:grid;grid-template-columns:1fr;gap:40px;}
+@media(min-width:900px){.about-grid{grid-template-columns:1.3fr .7fr;gap:80px;}}
+.about-grid p{max-width:60ch;font-size:1.08rem;}
+.portrait{
+  position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:3/4;
+  background:linear-gradient(160deg,var(--royal-soft),#f3ede7);border:1px solid var(--line);
+}
+.portrait svg{position:absolute;inset:0;width:100%;height:100%;}
+.portrait .cap{position:absolute;left:0;right:0;bottom:0;padding:16px 18px;background:none;
+  font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.06em;color:var(--muted);}
+
+.stat-list{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:60px;
+  border-top:1px solid var(--line);padding-top:44px;}
+.stat-list .stat b{display:block;font-family:"Space Grotesk",sans-serif;font-size:clamp(2.2rem,5vw,3.4rem);
+  font-weight:600;letter-spacing:-.03em;line-height:1;}
+.stat-list .stat span{color:var(--muted);font-family:"Space Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+  text-transform:uppercase;display:block;margin-top:10px;}
+
+.skills{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;margin-top:40px;}
+@media(min-width:700px){.skills{grid-template-columns:repeat(2,1fr);}}
+.skill{background:var(--paper);padding:26px 28px;}
+.skill h4{margin-bottom:8px;font-size:1.1rem;}
+.skill p{color:var(--muted);font-size:.92rem;margin:0;}
+
+.process{counter-reset:step;margin-top:44px;border-top:1px solid var(--line);}
+.process .step{display:grid;grid-template-columns:auto 1fr;gap:24px;padding:30px 0;border-bottom:1px solid var(--line);align-items:baseline;}
+.process .step::before{counter-increment:step;content:counter(step,decimal-leading-zero);
+  font-family:"Space Mono",monospace;color:var(--royal);font-size:.9rem;}
+.process .step h3{margin-bottom:6px;}
+.process .step p{color:var(--muted);margin:0;max-width:56ch;}
+
+/* =========================================================
+   Contact
+   ========================================================= */
+.contact-mail{font-family:"Space Grotesk",sans-serif;font-weight:600;
+  font-size:clamp(1.7rem,6vw,4rem);color:var(--ink);word-break:break-word;display:inline-block;
+  transition:color .3s;letter-spacing:-.02em;}
+.contact-mail:hover{color:var(--royal);}
+.socials{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;}
+.socials a{border:1px solid var(--line);border-radius:999px;padding:12px 24px;font-size:.95rem;
+  display:inline-flex;align-items:center;gap:.6em;transition:border-color .25s,color .25s,transform .25s var(--ease);}
+.socials a:hover{border-color:var(--royal);color:var(--royal);transform:translateY(-3px);}
+.contact-grid{display:grid;grid-template-columns:1fr;gap:50px;margin-top:60px;}
+@media(min-width:820px){.contact-grid{grid-template-columns:1.4fr .6fr;}}
+.contact-side dt{font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;}
+.contact-side dd{margin:0 0 24px;font-weight:500;}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+.site-footer{border-top:1px solid var(--line);padding:56px var(--pad) 40px;}
+.footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;align-items:flex-end;}
+.footer-top .big{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(1.6rem,4vw,2.6rem);
+  letter-spacing:-.02em;max-width:14ch;}
+.footer-links{display:flex;gap:26px;flex-wrap:wrap;font-family:"Space Mono",monospace;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;}
+.footer-links a{color:var(--muted);transition:color .2s;}
+.footer-links a:hover{color:var(--ink);}
+.footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:50px;
+  padding-top:24px;border-top:1px solid var(--line);color:var(--muted);
+  font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;}
+/* with the link row gone this is the only footer content, so the divider would rule off nothing */
+.footer-bottom:first-child{margin-top:0;padding-top:0;border-top:none;}
+
+/* =========================================================
+   Page transition overlay
+   ========================================================= */
+.page-transition{
+  position:fixed;inset:0;z-index:300;background:var(--ink);transform:translateY(100%);pointer-events:none;
+}
+.page-transition.cover{transform:translateY(0);transition:transform .5s var(--ease);}
+.page-transition.reveal{transform:translateY(-100%);transition:transform .6s var(--ease);}
+.page-transition .pt-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:"Space Grotesk",sans-serif;font-weight:700;color:var(--bg);font-size:2rem;opacity:0;transition:opacity .3s;}
+.page-transition .pt-mark span{color:#8ea2ff;}
+.page-transition.cover .pt-mark{opacity:1;}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important;}
+  .reveal{opacity:1;transform:none;}
+  .reveal-line>*{transform:none;}
+  .marquee-track{animation:none;}
+  .cursor-dot,.cursor-ring{display:none;}
+  body.cursor-on{cursor:auto;}
+}
+
+/* =========================================================
+   Bubble navigation (home) — zig-zag column over a moving field
+   ========================================================= */
+/* ONE field pinned behind the hero AND the explore section — a single canvas means a
+   single continuous shader, so there's no seam where the two sections meet */
+/* overflow:clip is load-bearing. .field-bg uses margin-bottom:-100vh to sit behind the hero,
+   which makes its margin box zero-height — so position:sticky lets the canvas slide a full
+   viewport BELOW this wrapper and paint over the marquee and the CTA (it's positioned, those
+   are static). Clipping contains it. `clip` (not `hidden`) — hidden would create a scroll
+   container and break the sticky. */
+.field-wrap{position:relative;overflow:clip;}
+.field-bg{
+  position:sticky;top:0;height:100vh;margin-bottom:-100vh;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(58% 52% at 50% 46%,#cfe6f5,#d9f0e0 40%,#eef0d6 66%,var(--bg) 84%);
+}
+.field-bg canvas{display:block;width:100%;height:100%;}
+/* padding:0 — the generic section padding would push content down and break the field flow */
+.bubbles{position:relative;z-index:1;padding:0;}
+.bubbles-content{position:relative;z-index:2;padding:clamp(48px,9vh,120px) 0 clamp(60px,10vh,140px);}
+.bubble-col{position:relative;margin-top:clamp(10px,4vh,40px);}
+.bubble-row{display:flex;align-items:center;min-height:46vh;padding:0 clamp(18px,7vw,110px);}
+.bubble-row.left{justify-content:flex-start;}
+.bubble-row.right{justify-content:flex-end;}
+/* filled 5-petal flower buttons — spin while hovered */
+.bubble{
+  position:relative;width:clamp(180px,28vw,265px);aspect-ratio:1;
+  display:grid;place-items:center;background:none;border-radius:0;box-shadow:none;overflow:visible;
+  opacity:0;transform:scale(.4) translateY(26px);
+  transition:transform .9s cubic-bezier(.34,1.56,.64,1),opacity .7s ease;
+}
+.bubble > *{grid-area:1/1;}
+.flower{
+  width:100%;height:100%;display:block;
+  filter:drop-shadow(0 22px 28px rgba(10,20,60,.38));
+  animation:flower-spin 9s linear infinite;
+  animation-play-state:paused;              /* only spins on hover */
+  transition:filter .4s var(--ease);
+}
+.bubble:hover .flower{animation-play-state:running;filter:drop-shadow(0 30px 40px rgba(10,20,60,.5));}
+@keyframes flower-spin{to{transform:rotate(360deg);}}
+.bubble.is-in{opacity:1;transform:none;}
+.bubble:hover{transform:scale(1.04);}
+/* label lives inside the flower's solid centre (neck radius ~14/100) so it stays legible while it spins */
+.bubble-label{
+  position:relative;z-index:2;pointer-events:none;
+  font-family:"Space Grotesk",sans-serif;font-weight:700;
+  font-size:clamp(.68rem,1vw,.85rem);line-height:1.15;letter-spacing:-.01em;
+  color:var(--ink);text-align:center;max-width:26%;
+  text-shadow:0 1px 3px rgba(255,255,255,.5);
+  display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.25em;
+  transition:transform .35s var(--ease);
+}
+.bubble-label .arrow{opacity:0;transform:translateX(-4px);font-size:.85em;transition:opacity .3s,transform .3s var(--ease);}
+.bubble:hover .bubble-label .arrow{opacity:1;transform:none;}
+.bubble:focus-visible{outline:3px solid var(--royal);outline-offset:8px;border-radius:14px;}
+@media(max-width:640px){
+  .bubble{width:clamp(165px,60vw,250px);}
+  .bubble-row{min-height:34vh;padding:0 14px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .bubble{opacity:1!important;transform:none!important;transition:none!important;}
+  .flower{animation:none!important;}
+  .field-bg{position:absolute;inset:0;height:100%;margin:0;}
+}
+
+/* =========================================================
+   Carousel (home) — an INTERACTIVE 3D curved carousel. Images
+   sit on a cylinder (the ring); you drag / swipe (or arrow-key)
+   to rotate it, and it snaps to the nearest card. Centre card
+   forward + flat, sides rotated back in perspective. No text.
+   Sits on the moving field. Rotation is driven by JS, not CSS.
+   ========================================================= */
+/* the surfer rides along this row's text line, so the two share one positioning context.
+   padding-top reserves the height of her body above that line. */
+.intro-row{
+  --logo-b:71px;                          /* the EGD logo's bottom edge (measured from page top) */
+  --surfer-h:clamp(84px,13vh,140px);
+  --line-drop:clamp(9px,1.4vh,16px);      /* how far below the text her line sits */
+  position:relative;
+  margin:calc(var(--logo-b) + 1cm) 0 0;   /* 1cm under the logo (was 3cm — raised by 2cm) */
+  padding-top:var(--surfer-h);
+}
+/* same font + colour as the "Designs" wordmark beside the logo, just larger as a heading */
+.carousel-intro{
+  position:relative;z-index:2;
+  margin:0;
+  padding:0 var(--pad);
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(1.3rem,2.8vw,2rem);line-height:1.28;letter-spacing:-.01em;
+}
+/* one word at a time, each landing as she clears it. The delays below are only a
+   sensible fallback — initSurferIntro() recomputes them from her real position. */
+.carousel-intro span{
+  display:inline-block;
+  /* short fade: at the 2s ride speed the words land ~110ms apart, so a long
+     fade would smear them together instead of reading one at a time */
+  animation:word-in .26s cubic-bezier(.22,.61,.36,1) both;
+}
+.carousel-intro span:nth-child(1){animation-delay:.85s;}
+.carousel-intro span:nth-child(2){animation-delay:1.3s;}
+.carousel-intro span:nth-child(3){animation-delay:1.75s;}
+@keyframes word-in{
+  from{opacity:0;transform:translateY(.35em);}
+  to{opacity:1;transform:none;}
+}
+
+/* the surfer — rides left to right in a straight line, ONCE on first landing, ALONG the text's
+   own line. Kept at the artwork's original orientation (no mirroring). */
+/* She follows a measured motion path (built in initSurferIntro): right along the text line,
+   then a clockwise sweep down and back left into the photo box. --ride / --spin drive the two
+   phases; the photo below runs the SAME spin timing so the hand-over looks continuous. */
+.surfer-fly{
+  --ride:3s;
+  --spin:2s;
+  position:absolute;top:0;left:0;
+  z-index:4;pointer-events:none;will-change:transform;
+  offset-path:var(--fly-path,none);
+  offset-rotate:0deg;                     /* she stays upright along the path */
+  offset-distance:0%;
+  animation:
+    fly var(--ride) linear both,
+    fly-out .3s linear calc(var(--ride) + var(--spin) * .5) both;
+}
+/* the spin sits on its own element so it rotates about her centre, independent of the path */
+.surfer-spin{
+  display:block;transform-origin:50% 50%;
+  animation:fly-spin var(--spin) cubic-bezier(.32,0,.18,1) var(--ride) both;
+}
+.surfer{
+  display:block;height:var(--surfer-h,120px);width:auto;
+  filter:drop-shadow(0 14px 22px rgba(20,20,45,.28));
+}
+@keyframes fly{ from{offset-distance:0%;} to{offset-distance:100%;} }
+@keyframes fly-spin{ from{rotate:0deg;} to{rotate:720deg;} }   /* two clockwise turns */
+@keyframes fly-out{ from{opacity:1;} to{opacity:0;} }
+@media(prefers-reduced-motion:reduce){
+  /* no ride, no staggered reveal — the words are simply there */
+  .surfer-fly{display:none;}              /* no ride at all — the photo is simply there */
+  .carousel-intro span{animation:none;opacity:1;transform:none;}
+}
+
+/* ABOUT ME — the label sits left, the portrait beside it, in the space under the intro line.
+   Sequenced to start once the surfer has left the screen (her ride is 3s): the photo slides
+   in, then the line types itself out. */
+.about-me{
+  --ride:3s;                              /* matches .surfer-fly — she lands in the box here */
+  --spin:2s;                              /* the two clockwise turns she hands over mid-way */
+  --t-type:3.05s;                         /* the line types WHILE the photo is still spinning */
+  position:relative;z-index:2;
+  margin-top:clamp(26px,4.6vh,60px);
+  padding:0 var(--pad);
+  display:flex;align-items:flex-start;gap:clamp(20px,5vw,70px);
+}
+.about-me-label{
+  margin:0;flex:none;
+  /* same face + colour as "Hi, I'm Ella" above, two steps down the type scale */
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(.9rem,1.95vw,1.4rem);
+  line-height:1.28;letter-spacing:-.01em;
+  /* typewriter: the text is monospace, so `ch` steps land exactly one character at a time.
+     "And this is me" is 14 characters. */
+  width:0;overflow:hidden;white-space:nowrap;
+  border-right:.1em solid var(--royal);
+  animation:
+    type 1.15s steps(14,end) var(--t-type) both,
+    caret .72s step-end var(--t-type) 6 both;
+}
+@keyframes type{ from{width:0;} to{width:14ch;} }
+@keyframes caret{ 0%,100%{border-right-color:transparent;} 50%{border-right-color:var(--royal);} }
+
+.about-me-photo{
+  margin:0;
+  width:clamp(140px,23vw,260px);
+  border-radius:14px;overflow:hidden;
+  box-shadow:0 26px 54px -24px rgba(20,20,45,.5);
+  /* the same spin, on the same clock as the surfer above — she fades out at the half-way point
+     and the photo fades in already mid-rotation, so it reads as one continuous motion */
+  animation:
+    grad-spin var(--spin) cubic-bezier(.32,0,.18,1) var(--ride) both,
+    grad-in .3s linear calc(var(--ride) + var(--spin) * .5) both;
+}
+@keyframes grad-spin{ from{rotate:0deg;} to{rotate:720deg;} }
+@keyframes grad-in{ from{opacity:0;} to{opacity:1;} }
+.about-me-photo img{width:100%;height:auto;display:block;}
+@media(max-width:640px){
+  .about-me{flex-direction:column;gap:18px;}
+  .about-me-photo{width:min(100%,220px);}
+}
+@media(prefers-reduced-motion:reduce){
+  /* no slide, no typing — both are simply present */
+  .about-me-photo{animation:none;}
+  .about-me-label{animation:none;width:auto;border-right:none;}
+}
+
+.carousel{
+  position:relative;z-index:1;
+  /* the .about-me block now fills the space that was reserved under the intro */
+  margin-top:clamp(40px,6vh,90px);
+  padding:clamp(14px,2.4vh,34px) 0 clamp(20px,3vh,40px);
+  overflow:hidden;                        /* clip the side/back cards as they wrap away */
+  /* the ring dissolves into the field only at the very edges — cards reach nearly full width */
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+  opacity:0;transition:opacity .9s var(--ease);
+}
+.carousel.is-in{opacity:1;}
+/* the 3D scene — far camera so the wide fan reads small (zoomed out). grab cursor = draggable */
+.carousel-stage{
+  position:relative;
+  height:clamp(200px,32vh,290px);
+  perspective:3200px;
+  perspective-origin:50% 50%;
+  cursor:grab;touch-action:pan-y;         /* let vertical scroll through; we handle horizontal */
+  outline:none;
+}
+.carousel-stage.grabbing{cursor:grabbing;}
+.carousel-stage:focus-visible{outline:3px solid var(--royal);outline-offset:6px;border-radius:18px;}
+/* the cylinder. JS sets its rotateY; the transition is toggled on only for the snap-back. */
+.carousel-ring{
+  position:absolute;inset:0;
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+/* each card is CENTRED on the stage axis with px margins (so the rotation axis is the stage
+   centre), then the inline transform `rotateY(θ) translateZ(R)` sets it on the cylinder. */
+.carousel-card{
+  position:absolute;top:50%;left:50%;
+  width:var(--cardw,160px);height:var(--cardh,210px);
+  margin-left:calc(var(--cardw,160px) / -2);
+  margin-top:calc(var(--cardh,210px) / -2);
+  border-radius:14px;overflow:hidden;background:transparent;
+  box-shadow:0 22px 46px -22px rgba(20,20,45,.55);
+  backface-visibility:hidden;              /* cards facing away (round the back) vanish cleanly */
+  -webkit-backface-visibility:hidden;
+}
+/* contain (not cover) — the whole photo shows; the card is transparent so the moving field
+   shows through the letterbox gaps instead of a white mat */
+.carousel-card img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
+/* a soft inner edge so each card reads as a distinct pane in the fan */
+.carousel-card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
+}
+/* drag hint below the ring */
+.carousel-hint{
+  margin:clamp(8px,1.4vh,18px) auto 0;text-align:center;
+  font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(20,20,45,.42);user-select:none;pointer-events:none;
+  transition:opacity .5s var(--ease);
+}
+.carousel.interacted .carousel-hint{opacity:0;}
+@media(prefers-reduced-motion:reduce){
+  .carousel{opacity:1;}
+}
+
+/* =========================================================
+   Experience & skills (about)
+   ========================================================= */
+.exp-grid{display:grid;grid-template-columns:1fr;gap:clamp(40px,6vw,72px);margin-top:48px;}
+@media(min-width:860px){.exp-grid{grid-template-columns:1.05fr .95fr;gap:clamp(48px,7vw,90px);}}
+.exp-title{font-family:"Space Mono",monospace;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--royal);font-weight:400;margin-bottom:28px;}
+.timeline{list-style:none;margin:0;padding:0;position:relative;}
+.timeline::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--line);}
+.tl-item{position:relative;padding:0 0 30px 34px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-item::before{content:"";position:absolute;left:0;top:5px;width:16px;height:16px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--royal);}
+.tl-year{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:7px;}
+.tl-item h4{font-size:1.15rem;margin-bottom:3px;}
+.tl-org{color:var(--royal);font-weight:500;font-size:.98rem;margin:0 0 6px;}
+.tl-desc{color:var(--muted);font-size:.95rem;margin:0;max-width:48ch;}
+.skill-group{margin-bottom:26px;}
+.skill-group:last-child{margin-bottom:0;}
+.skill-group h4{font-size:1.02rem;margin-bottom:12px;}
+.tag-list{display:flex;flex-wrap:wrap;gap:9px;}
+.tag-list span{border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:.85rem;
+  color:#33333f;background:var(--paper);transition:border-color .2s,color .2s;}
+.tag-list span:hover{border-color:var(--royal);color:var(--royal);}

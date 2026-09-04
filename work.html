@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selected Works — EGD</title>
+<meta name="description" content="Selected work by EGD — medical & accessibility products, woodwork and graphic design.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=209">
+</head>
+<body>
+  <div class="page-field-bg" aria-hidden="true"><canvas id="work-field-canvas"></canvas></div>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="page-transition" aria-hidden="true"><span class="pt-mark">EGD</span></div>
+
+  <header class="site-header scrolled">
+    <div class="brand-lockup">
+      <a class="brand magnetic" href="index.html" data-strength="0.4" aria-label="EGD Designs — home">
+        <span class="brand-glow" aria-hidden="true"></span>
+        <img class="brand-logo" src="assets/egd-logo.png" alt="EGD" width="640" height="475">
+      </a>
+      <span class="brand-role">Designs</span>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav class="nav" id="nav">
+      <a href="index.html"><span>Home</span></a>
+      <a href="work.html" class="active"><span>Selected Works</span></a>
+      <a href="about.html"><span>About</span></a>
+      <a href="contact.html"><span>Contact</span></a>
+    </nav>
+  </header>
+
+  <main class="wrap page-top">
+    <p class="eyebrow reveal">Selected work</p>
+    <h1 class="reveal" style="color:var(--royal)">Things I've made,<br>and who they're for.</h1>
+    <p class="lead reveal" style="margin-top:24px;color:var(--royal)">Three projects across two disciplines. Every one starts with a real person and a real constraint — then gets made until it works. Click any project for the full story.</p>
+
+    <div class="filter-bar" id="filter-bar"></div>
+    <div class="grid" id="work-grid"></div>
+  </main>
+
+  <footer class="site-footer" style="margin-top:60px">
+    <div class="wrap">
+      <div class="footer-top">
+        <p class="big">Curious about a project in more depth?</p>
+        <a class="btn btn-primary magnetic" href="contact.html" data-strength="0.3">Contact me <span class="arrow">→</span></a>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; <span id="yr"></span> EGD</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/effect-meadow-tricolor-green.js?v=1"></script>
+  <script>
+    (function(){
+      var c = document.getElementById('work-field-canvas');
+      if (c && window.EGDField) window.EGDField(c, { interactive:true, pointerTarget:document });
+    })();
+  </script>
+  <script src="assets/app.js?v=102"></script>
+</body>
+</html>

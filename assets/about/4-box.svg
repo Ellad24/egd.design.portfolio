@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">
+  <!-- placeholder card until the real boxing photo arrives — same lavender/royal
+       language as the portrait placeholder on the About page -->
+  <rect width="300" height="400" fill="#e7e6f7"/>
+  <circle cx="150" cy="160" r="74" fill="none" stroke="#2340c8" stroke-width="2" opacity="0.6"/>
+  <circle cx="150" cy="160" r="50" fill="#2340c8" opacity="0.12"/>
+  <text x="150" y="185" text-anchor="middle" font-size="72">&#129354;</text>
+  <text x="150" y="300" text-anchor="middle" font-family="Space Mono, monospace" font-weight="700" font-size="26" fill="#2340c8">Boxing</text>
+  <text x="150" y="330" text-anchor="middle" font-family="Space Mono, monospace" font-size="14" fill="#2340c8" opacity="0.7">photo on its way</text>
+</svg>

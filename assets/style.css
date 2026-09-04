@@ -1,0 +1,1308 @@
+/* =========================================================
+   EGD — product design · accessibility · craft
+   Bold editorial system. Swap colours in :root to re-theme.
+   ========================================================= */
+:root{
+  --bg:#efeeec;          /* warm paper            */
+  --paper:#ffffff;
+  --ink:#14141c;         /* near-black text       */
+  --muted:#6b6c82;
+  --line:#dddcd7;
+  --royal:#2340c8;       /* primary accent        */
+  --royal-soft:#e3e6fb;
+  --field-yellow:#fde8a3; /* matches the Meadow Ripple shader's base tone (effect.js) */
+  /* category signals */
+  --c-medical:#2340c8;   /* medical & accessibility */
+  --c-wood:#b5623a;      /* woodwork                */
+  --c-graphic:#6b4de6;   /* graphic                 */
+  --maxw:1180px;
+  --pad:clamp(20px,5vw,72px);
+  --ease:cubic-bezier(.22,1,.36,1);
+  --radius:16px;
+  /* shared "character scale" — the intro character, and (see .nav-shell) the shell icons
+     under the header nav links are deliberately sized to match it. Lives on :root (not
+     scoped to .intro-row, which only exists on index.html) so .site-header can use it on
+     every page. */
+  --char-w:clamp(90px,13vw,170px);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:clip;
+}
+a{color:inherit;text-decoration:none;}
+img{max-width:100%;display:block;}
+button{font:inherit;color:inherit;border:none;background:none;cursor:pointer;}
+::selection{background:var(--royal);color:#fff;}
+
+h1,h2,h3,h4{font-family:"Space Grotesk","Inter",sans-serif;font-weight:600;letter-spacing:-0.02em;line-height:1.02;margin:0;}
+h1{font-size:clamp(2.6rem,8vw,6.4rem);}
+h2{font-size:clamp(1.9rem,4.4vw,3.4rem);}
+h3{font-size:clamp(1.2rem,2vw,1.5rem);letter-spacing:-0.01em;}
+p{margin:0 0 1em;}
+.lead{font-size:clamp(1.12rem,2vw,1.5rem);color:var(--muted);max-width:56ch;line-height:1.5;}
+
+/* mono labels — the "spec sheet" product-design voice */
+.eyebrow,.mono{
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:400;
+}
+.eyebrow{color:var(--royal);display:inline-flex;align-items:center;gap:.6em;margin-bottom:1.4rem;}
+.eyebrow::before{content:"";width:26px;height:1px;background:currentColor;display:inline-block;}
+
+/* =========================================================
+   Layout
+   ========================================================= */
+.wrap{max-width:var(--maxw);margin:0 auto;padding-left:var(--pad);padding-right:var(--pad);}
+section{padding:clamp(72px,11vw,150px) 0;}
+/* clears .site-header, which is position:fixed. At .nav-shell's current size (15% of
+   --char-w) the header's measured height barely moves across viewports (~92-109px), so
+   this only needs a modest width-driven nudge plus buffer rather than closely tracking
+   --char-w's own growth curve the way it had to at larger shell sizes. */
+.page-top{padding-top:clamp(115px,calc(2vw + 90px),135px);}
+
+/* Selected Works page background — a simple fixed full-viewport canvas (unlike the
+   landing page's .field-wrap/.field-bg, which use a sticky-scroll trick tied to that
+   page's stacked sections). A WebGL canvas gets its own GPU compositing layer, which
+   can float above plain in-flow siblings regardless of DOM/z-index:auto order — so,
+   same as the landing page's .bubbles/.bubbles-content, give the actual content an
+   explicit position+z-index above it rather than relying on paint order alone. */
+.page-field-bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.page-field-bg canvas{display:block;width:100%;height:100%;}
+/* .site-header already has its own position:fixed;z-index:60 (unaffected by the canvas
+   layering below) — every OTHER top-level body child needs lifting above it, not just
+   main/footer: any plain <section> left at the default z-index:auto risked the same
+   canvas-floats-above-it bug (inconsistently — a GPU compositing quirk, not a strict
+   deterministic paint order, which is why it only showed up on some sections/some loads). */
+.page-field-bg ~ main,
+.page-field-bg ~ section,
+.page-field-bg ~ footer{position:relative;z-index:1;}
+
+/* grain / texture overlay */
+.grain{
+  position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.5;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* =========================================================
+   Custom cursor (bold)
+   ========================================================= */
+.cursor-dot,.cursor-ring{
+  position:fixed;top:0;left:0;z-index:9999;pointer-events:none;border-radius:50%;
+  transform:translate(-50%,-50%);will-change:transform;
+}
+.cursor-dot{width:7px;height:7px;background:var(--royal);}
+.cursor-ring{
+  width:38px;height:38px;border:1.5px solid rgba(35,64,200,.55);
+  transition:width .25s var(--ease),height .25s var(--ease),background .25s,border-color .25s,opacity .25s;
+}
+.cursor-ring.is-hover{width:64px;height:64px;background:rgba(35,64,200,.10);border-color:transparent;}
+.cursor-ring.is-label{width:78px;height:78px;background:var(--royal);border-color:transparent;}
+.cursor-ring .clabel{
+  color:#fff;font-family:"Space Mono",monospace;font-size:.62rem;letter-spacing:.1em;
+  opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center;
+  width:100%;height:100%;text-transform:uppercase;
+}
+.cursor-ring.is-label .clabel{opacity:1;}
+body.cursor-on{cursor:none;}
+body.cursor-on a,body.cursor-on button,body.cursor-on .card{cursor:none;}
+@media(hover:none),(pointer:coarse){.cursor-dot,.cursor-ring{display:none;}body.cursor-on{cursor:auto;}}
+
+/* =========================================================
+   Header / nav
+   ========================================================= */
+.site-header{
+  position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px var(--pad);
+  transition:transform .4s var(--ease),background .3s,backdrop-filter .3s,border-color .3s;
+  border-bottom:1px solid transparent;
+}
+.site-header.scrolled{background:rgba(239,238,236,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-color:var(--line);}
+.site-header.hide{transform:translateY(-105%);}
+/* while the mobile menu is open the header must NOT create a containing block
+   (transform / backdrop-filter would trap the fullscreen fixed nav overlay) */
+body.nav-open .site-header{transform:none!important;background:transparent!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border-color:transparent!important;}
+.brand-lockup{display:flex;align-items:center;gap:14px;min-width:0;}
+/* --logo-h is the one number to tune */
+.brand{
+  --logo-h:53px;   /* 38px + 40% */
+  position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  height:var(--logo-h);width:calc(var(--logo-h)*1.347);   /* the logo art's own 640:475 ratio */
+}
+/* the logo art is white, so it needs its blue pool behind it to read */
+.brand-logo{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;display:block;}
+/* the blue faded surround. masked so the shimmer fades out with it instead of
+   revealing a hard ellipse edge. no blend modes — they wreck compositing over the field. */
+.brand-glow{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:170%;height:185%;border-radius:50%;pointer-events:none;
+  background:
+    linear-gradient(115deg,transparent 32%,rgba(180,218,255,.55) 48%,transparent 64%) 0 0/260% 100% no-repeat,
+    radial-gradient(closest-side,#3050dd 0%,#2340c8 50%,rgba(35,64,200,.55) 72%,rgba(35,64,200,0) 100%);
+  -webkit-mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  animation:brand-shimmer 2.6s linear infinite;
+  animation-play-state:paused;                 /* only shimmers on hover */
+  transition:transform .4s var(--ease);
+}
+.brand:hover .brand-glow{animation-play-state:running;transform:translate(-50%,-50%) scale(1.06);}
+@keyframes brand-shimmer{
+  from{background-position:-160% 0, 0 0;}
+  to{background-position:160% 0, 0 0;}
+}
+.brand-role{font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--royal);white-space:nowrap;}
+@media(max-width:420px){.brand-role{display:none;}}
+@media(prefers-reduced-motion:reduce){.brand-glow{animation:none!important;}}
+.nav{display:flex;align-items:flex-start;gap:clamp(18px,3vw,40px);font-size:.95rem;font-weight:500;}
+/* each link is now a small stack — label on top, its shell (.nav-shell) just below —
+   rather than a single line of text, so the header nav doubles as the old bubble CTAs'
+   new home (see .nav-shell below and the shells' HTML, which used to live in the
+   intro CTA + bubble-nav sections further down the page). */
+.nav a{
+  position:relative;padding:6px 0;opacity:.72;transition:opacity .2s;
+  display:flex;flex-direction:column;align-items:center;gap:clamp(4px,.6vw,10px);
+  color:var(--royal);
+}
+.nav a span{position:relative;}
+.nav a span::after{content:"";position:absolute;left:0;bottom:-2px;height:2px;width:100%;background:var(--royal);
+  transform:scaleX(0);transform-origin:right;transition:transform .35s var(--ease);}
+.nav a:hover,.nav a.active{opacity:1;}
+.nav a:hover span::after,.nav a.active span::after{transform:scaleX(1);transform-origin:left;}
+/* the shells — same pixel-art icons the old bubble CTAs used, sized to match the intro
+   character (--char-w, :root) since they're standing in for her scale reference now
+   that they've moved up here. Same spin-on-hover treatment .flower had. */
+.nav-shell{
+  width:calc(var(--char-w) * .15);aspect-ratio:1;height:auto;display:block;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 10px 14px rgba(10,20,60,.32));
+  animation:flower-spin 9s linear infinite;
+  animation-play-state:paused;
+  transition:filter .4s var(--ease);
+}
+.nav a:hover .nav-shell{animation-play-state:running;filter:drop-shadow(0 14px 20px rgba(10,20,60,.42));}
+.nav-toggle{display:none;}
+@media(max-width:720px){
+  .nav-toggle{display:flex;flex-direction:column;gap:5px;padding:8px;z-index:61;}
+  .nav-toggle span{width:26px;height:2px;background:var(--ink);transition:transform .3s var(--ease),opacity .2s;}
+  .nav-toggle.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  .nav-toggle.open span:nth-child(2){opacity:0;}
+  .nav-toggle.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+  /* visibility/opacity (not just transform) hide this: the header's backdrop-filter can become the
+     containing block for position:fixed, which would leave the closed menu peeking over the page */
+  .nav{
+    position:fixed;inset:0;flex-direction:column;justify-content:center;gap:28px;
+    background:var(--bg);font-size:1.6rem;font-family:"Space Grotesk",sans-serif;
+    transform:translateY(-100%);visibility:hidden;opacity:0;pointer-events:none;
+    transition:transform .5s var(--ease),opacity .3s ease,visibility 0s linear .5s;
+  }
+  .nav.open{
+    transform:translateY(0);visibility:visible;opacity:1;pointer-events:auto;
+    transition:transform .5s var(--ease),opacity .3s ease,visibility 0s;
+  }
+  .nav a{opacity:1;}
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+.btn{
+  display:inline-flex;align-items:center;gap:.7em;
+  font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:1rem;
+  padding:15px 30px;border-radius:999px;transition:transform .25s var(--ease),background .25s,color .25s;
+  will-change:transform;
+}
+.btn .arrow{transition:transform .3s var(--ease);}
+.btn:hover .arrow{transform:translateX(5px);}
+.btn-primary{background:var(--ink);color:var(--bg);}
+.btn-primary:hover{background:var(--royal);color:#fff;}
+.btn-ghost{border:1.5px solid var(--ink);}
+.btn-ghost:hover{background:var(--ink);color:var(--bg);}
+
+/* =========================================================
+   Hero (home)
+   ========================================================= */
+/* now just a spacer of bare field between the photo wall and the flowers.
+   padding:0 is required — the generic section padding (72px top+bottom) is taller than 3cm
+   and would win, making the gap 144px instead of 113px. */
+.hero{position:relative;z-index:1;height:3cm;min-height:0;padding:0;}
+
+/* =========================================================
+   Reveal-on-scroll utility
+   ========================================================= */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .8s var(--ease),transform .8s var(--ease);}
+.reveal.is-in{opacity:1;transform:none;}
+.reveal-line{overflow:hidden;}
+.reveal-line>*{display:inline-block;transform:translateY(105%);transition:transform .9s var(--ease);}
+.reveal-line.is-in>*{transform:none;}
+
+/* discipline chips (still used on About) */
+.chips{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;}
+.chip{
+  display:inline-flex;align-items:center;gap:.5em;border:1px solid var(--line);border-radius:999px;
+  padding:9px 18px;font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;
+  text-transform:uppercase;background:var(--paper);
+}
+.chip .dot{width:8px;height:8px;border-radius:50%;}
+
+/* =========================================================
+   Marquee
+   ========================================================= */
+.marquee{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:26px 0;overflow:hidden;white-space:nowrap;user-select:none;
+}
+.marquee-track{display:inline-flex;gap:0;animation:scroll-x 26s linear infinite;will-change:transform;}
+.marquee:hover .marquee-track{animation-play-state:paused;}
+.marquee-track span{font-family:"Space Grotesk",sans-serif;font-weight:600;
+  font-size:clamp(1.6rem,4vw,2.8rem);letter-spacing:-.02em;padding:0 34px;display:inline-flex;align-items:center;gap:34px;}
+.marquee-track span::after{content:"✦";color:var(--royal);font-size:.7em;}
+@keyframes scroll-x{to{transform:translateX(-50%);}}
+
+/* =========================================================
+   Work grid + cards
+   ========================================================= */
+.filter-bar{display:flex;flex-wrap:wrap;gap:10px;margin:40px 0 8px;}
+.filter{
+  font-family:"Space Mono",monospace;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;
+  padding:10px 18px;border-radius:999px;border:1px solid var(--royal-soft);background:var(--royal-soft);
+  color:var(--royal);transition:border-color .25s,box-shadow .25s,transform .25s;
+}
+.filter .n{opacity:.6;margin-left:.5em;}
+.filter:hover{border-color:var(--royal);transform:translateY(-2px);}
+.filter.active{border-color:var(--royal);box-shadow:inset 0 0 0 1px var(--royal);}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:clamp(20px,3vw,40px);margin-top:44px;}
+.card{
+  position:relative;display:block;background:var(--paper);border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;
+  transition:transform .5s var(--ease),box-shadow .5s var(--ease),opacity .5s,filter .4s;
+}
+.card.hide{display:none;}
+.card:hover{transform:translateY(-6px);box-shadow:0 30px 60px -30px rgba(20,20,40,.4);}
+.card .poster{position:relative;aspect-ratio:4/3;overflow:hidden;background:#e9e8e4;}
+.card .poster svg{position:absolute;inset:0;width:100%;height:100%;transition:transform .7s var(--ease);}
+.card:hover .poster svg{transform:scale(1.05);}
+.card .index{
+  position:absolute;top:16px;left:18px;font-family:"Space Mono",monospace;font-size:.72rem;
+  letter-spacing:.1em;color:#fff;mix-blend-mode:difference;z-index:2;
+}
+.card .tagpill{
+  position:absolute;top:14px;right:16px;z-index:2;font-family:"Space Mono",monospace;
+  font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:#fff;
+  padding:6px 11px;border-radius:999px;backdrop-filter:blur(4px);background:rgba(20,20,30,.5);
+}
+.card .meta{padding:22px 24px 26px;}
+.card .meta .cat{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:9px;display:flex;align-items:center;gap:.5em;}
+.card .meta .cat .dot{width:8px;height:8px;border-radius:50%;}
+.card .meta h3{margin-bottom:6px;}
+.card .meta .blurb{color:var(--muted);font-size:.95rem;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card .view{margin-top:16px;font-family:"Space Mono",monospace;font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--royal);display:inline-flex;gap:.5em;align-items:center;}
+.card .view .arrow{transition:transform .3s var(--ease);}
+.card:hover .view .arrow{transform:translateX(5px);}
+
+/* =========================================================
+   Project modal (case study)
+   ========================================================= */
+.modal{
+  position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;
+  visibility:hidden;pointer-events:none;
+}
+.modal.open{visibility:visible;pointer-events:auto;}
+.modal-backdrop{position:absolute;inset:0;background:rgba(15,15,25,.5);opacity:0;transition:opacity .4s;backdrop-filter:blur(2px);}
+.modal.open .modal-backdrop{opacity:1;}
+.modal-panel{
+  position:relative;width:min(680px,100%);height:100%;background:var(--bg);overflow-y:auto;
+  transform:translateX(100%);transition:transform .6s var(--ease);box-shadow:-30px 0 80px -30px rgba(0,0,0,.4);
+}
+.modal.open .modal-panel{transform:none;}
+.modal-close{
+  position:sticky;top:0;float:right;margin:18px 18px 0 0;z-index:3;
+  width:46px;height:46px;border-radius:50%;background:var(--ink);color:var(--bg);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:transform .3s var(--ease),background .3s;
+}
+.modal-close:hover{transform:rotate(90deg);background:var(--royal);}
+.modal-hero{aspect-ratio:16/10;position:relative;overflow:hidden;background:#e9e8e4;}
+.modal-hero svg{position:absolute;inset:0;width:100%;height:100%;}
+.modal-body{padding:clamp(28px,5vw,52px);}
+.modal-body .cat{font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:.5em;margin-bottom:16px;}
+.modal-body .cat .dot{width:9px;height:9px;border-radius:50%;}
+.modal-body h2{margin-bottom:10px;}
+.modal-body .subtitle{color:var(--muted);font-size:1.15rem;margin-bottom:34px;}
+.spec{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 30px;border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);padding:26px 0;margin-bottom:34px;}
+.spec dt{font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.spec dd{margin:0;font-weight:500;}
+.case-block{margin-bottom:30px;}
+.case-block h4{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--royal);margin-bottom:12px;}
+.case-block p{color:#33333f;}
+.tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px;}
+.tags span{border:1px solid var(--line);border-radius:999px;padding:7px 15px;font-size:.8rem;color:var(--muted);}
+.modal-note{margin-top:30px;padding:16px 18px;border-radius:12px;background:var(--royal-soft);
+  font-size:.85rem;color:#33406b;font-family:"Space Mono",monospace;letter-spacing:.02em;line-height:1.5;}
+
+/* case-study gallery (in the modal) — click any image to enlarge */
+.case-gallery{display:grid;grid-template-columns:1fr;gap:clamp(14px,2.2vw,24px);margin:34px 0 6px;}
+@media(min-width:560px){.case-gallery{grid-template-columns:1fr 1fr;}}
+.case-gallery figure{margin:0;}
+/* feature = a large, full-width image (the two Stride A1 product shots) */
+.case-gallery figure.cg-feature{grid-column:1 / -1;}
+.case-gallery figure.cg-feature img{border-radius:14px;}
+.case-gallery img{
+  width:100%;height:auto;display:block;border-radius:12px;background:#efeeea;cursor:zoom-in;
+  box-shadow:0 16px 38px -22px rgba(20,20,45,.42);
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease);
+}
+.case-gallery img:hover{transform:translateY(-3px);box-shadow:0 26px 52px -22px rgba(20,20,45,.5);}
+.case-gallery figcaption{margin-top:9px;font-size:.8rem;line-height:1.4;color:var(--muted);}
+
+/* graduation photos (about.html) — same floated-photo language as .case-gallery img.
+   Two side by side, the solo shot on the left; each sized at half the original
+   single-photo width (520px → 260px) per "make them both smaller by 50%". */
+.grad-photo-row{display:flex;gap:20.8px;margin-top:6px;flex-wrap:wrap;}
+.grad-photo{margin:0;max-width:260px;flex:1 1 200px;height:220px;}
+.grad-photo img{
+  width:100%;height:100%;display:block;object-fit:cover;border-radius:0;background:#efeeea;
+  box-shadow:0 16px 38px -22px rgba(20,20,45,.42);
+}
+.grad-photo figcaption{margin-top:9px;font-size:.8rem;line-height:1.4;color:var(--muted);}
+
+/* full-screen image viewer */
+.lightbox{
+  position:fixed;inset:0;z-index:2000;display:none;place-items:center;
+  background:rgba(12,12,22,.92);padding:clamp(16px,4vw,64px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.lightbox.open{display:grid;}
+.lightbox img{max-width:100%;max-height:84vh;object-fit:contain;border-radius:8px;box-shadow:0 30px 90px rgba(0,0,0,.55);}
+.lb-cap{position:absolute;left:0;right:0;bottom:clamp(14px,3vh,30px);margin:0;text-align:center;
+  color:rgba(255,255,255,.86);font-size:.82rem;padding:0 24px;font-family:"Space Mono",monospace;letter-spacing:.02em;}
+.lb-close{
+  position:absolute;top:clamp(12px,3vh,26px);right:clamp(12px,3vw,30px);width:44px;height:44px;
+  border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:1.05rem;
+  cursor:pointer;display:grid;place-items:center;transition:background .25s;
+}
+.lb-close:hover{background:rgba(255,255,255,.3);}
+@media(prefers-reduced-motion:reduce){.case-gallery img{transition:none;}.case-gallery img:hover{transform:none;}}
+
+/* manual trigger — opens the booklet viewer below for a project's real install manual */
+.manual-trigger{margin-top:34px;padding-top:28px;border-top:1px solid var(--line);}
+.manual-open-btn{
+  display:flex;align-items:center;gap:16px;width:100%;text-align:left;
+  padding:14px;border:1px solid var(--line);border-radius:14px;
+  background:var(--paper);cursor:pointer;transition:border-color .25s,transform .25s var(--ease);
+}
+.manual-open-btn:hover{border-color:var(--royal);transform:translateY(-2px);}
+.manual-open-btn img{width:64px;height:auto;border-radius:6px;box-shadow:0 10px 22px -12px rgba(20,20,45,.4);flex:none;}
+.manual-open-btn .mo-text{display:flex;flex-direction:column;gap:4px;flex:1;}
+.manual-open-btn .mo-title{font-weight:600;}
+.manual-open-btn .mo-sub{font-size:.82rem;color:var(--muted);}
+.manual-open-btn .arrow{transition:transform .3s var(--ease);flex:none;}
+.manual-open-btn:hover .arrow{transform:translateX(5px);}
+
+/* the booklet — a page-flip viewer for the manual, same overlay pattern as .lightbox */
+.booklet{
+  position:fixed;inset:0;z-index:2000;display:none;place-items:center;
+  background:rgba(12,12,22,.92);padding:clamp(16px,4vw,64px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+}
+.booklet.open{display:grid;}
+.booklet-inner{position:relative;width:min(720px,92vw);}
+.booklet-stage{position:relative;width:100%;aspect-ratio:1191/839;}
+.booklet-stage img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  border-radius:10px;box-shadow:0 30px 90px rgba(0,0,0,.55);background:#fff;
+}
+.booklet-cap{margin:14px 0 0;text-align:center;min-height:1.4em;
+  color:rgba(255,255,255,.86);font-size:.82rem;font-family:"Space Mono",monospace;letter-spacing:.02em;}
+.booklet-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:16px;}
+.booklet-nav button{
+  width:44px;height:44px;border:none;border-radius:50%;background:rgba(255,255,255,.16);
+  color:#fff;font-size:1.1rem;cursor:pointer;display:grid;place-items:center;transition:background .25s;
+}
+.booklet-nav button:hover{background:rgba(255,255,255,.3);}
+.booklet-nav button:disabled{opacity:.3;cursor:default;}
+.booklet-nav button:disabled:hover{background:rgba(255,255,255,.16);}
+.booklet-count{color:rgba(255,255,255,.7);font-family:"Space Mono",monospace;font-size:.78rem;letter-spacing:.06em;min-width:4.5em;text-align:center;}
+.booklet-close{
+  position:absolute;top:clamp(12px,3vh,26px);right:clamp(12px,3vw,30px);width:44px;height:44px;
+  border:none;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:1.05rem;
+  cursor:pointer;display:grid;place-items:center;transition:background .25s;z-index:2;
+}
+.booklet-close:hover{background:rgba(255,255,255,.3);}
+
+/* =========================================================
+   Dark capabilities / CTA band
+   ========================================================= */
+.band{background:var(--ink);color:var(--bg);}
+.band .eyebrow{color:#8ea2ff;}
+.band .muted{color:#9a9ab0;}
+.cap-grid{display:grid;grid-template-columns:1fr;gap:1px;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);overflow:hidden;margin-top:50px;}
+@media(min-width:760px){.cap-grid{grid-template-columns:repeat(3,1fr);}}
+.cap{background:var(--ink);padding:34px 30px;transition:background .3s;}
+.cap:hover{background:#1e1e2c;}
+.cap .num{font-family:"Space Mono",monospace;font-size:.72rem;color:#8ea2ff;letter-spacing:.1em;margin-bottom:18px;}
+.cap h3{margin-bottom:10px;color:#fff;}
+.cap p{color:#9a9ab0;font-size:.95rem;margin:0;}
+
+/* padding-bottom trimmed so the blue stops just under the button instead of
+   carrying on as a bar above the footer */
+/* symmetric padding — the section default is top-heavy, which pushed the button below centre */
+.cta{background:#fff;color:var(--ink);text-align:center;padding:clamp(56px,7vw,96px) 0;}
+.cta h2{max-width:16ch;margin:0 auto 26px;}
+/* the button was white-on-royal; on a white panel it needs to invert or it disappears */
+.cta .btn-primary{background:var(--royal);color:#fff;}
+.cta .btn-primary:hover{background:var(--ink);color:#fff;}
+
+/* =========================================================
+   About
+   ========================================================= */
+/* wraps the About detail section + shell nav + carousel, all now living BELOW the animated
+   landing intro — painted the same warm yellow as the shader field's base tone so the page
+   reads as one continuous palette instead of dropping to the site's default off-white. One
+   shared background on the wrapper (rather than per-section) means any margin gaps between
+   the children inside it still show yellow, not a sliver of body background. */
+.about-field{background:var(--field-yellow);}
+.about-grid{display:grid;grid-template-columns:1fr;gap:40px;}
+@media(min-width:900px){.about-grid{grid-template-columns:1.3fr .7fr;gap:80px;}}
+.about-grid p{max-width:60ch;font-size:1.08rem;}
+.portrait{
+  position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:3/4;
+  background:linear-gradient(160deg,var(--royal-soft),#f3ede7);border:1px solid var(--line);
+}
+.portrait svg{position:absolute;inset:0;width:100%;height:100%;}
+.portrait .cap{position:absolute;left:0;right:0;bottom:0;padding:16px 18px;background:none;
+  font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.06em;color:var(--muted);}
+
+.stat-list{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:60px;
+  border-top:1px solid var(--line);padding-top:44px;}
+.stat-list .stat b{display:block;font-family:"Space Grotesk",sans-serif;font-size:clamp(2.2rem,5vw,3.4rem);
+  font-weight:600;letter-spacing:-.03em;line-height:1;}
+.stat-list .stat span{color:var(--muted);font-family:"Space Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+  text-transform:uppercase;display:block;margin-top:10px;}
+
+.skills{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:var(--radius);overflow:hidden;margin-top:40px;}
+@media(min-width:700px){.skills{grid-template-columns:repeat(2,1fr);}}
+.skill{background:var(--paper);padding:26px 28px;}
+.skill h4{margin-bottom:8px;font-size:1.1rem;}
+.skill p{color:var(--muted);font-size:.92rem;margin:0;}
+
+.process{counter-reset:step;margin-top:44px;border-top:1px solid var(--line);}
+.process .step{display:grid;grid-template-columns:auto 1fr;gap:24px;padding:30px 0;border-bottom:1px solid var(--line);align-items:baseline;}
+.process .step::before{counter-increment:step;content:counter(step,decimal-leading-zero);
+  font-family:"Space Mono",monospace;color:var(--royal);font-size:.9rem;}
+.process .step h3{margin-bottom:6px;}
+.process .step p{color:var(--muted);margin:0;max-width:56ch;}
+
+/* =========================================================
+   Contact
+   ========================================================= */
+.contact-mail-row{display:flex;align-items:center;gap:clamp(10px,2vw,20px);flex-wrap:wrap;}
+.contact-mail-icon{
+  width:clamp(36px,7vw,64px);height:auto;flex:none;image-rendering:pixelated;
+  animation:contact-icon-float 2.6s ease-in-out infinite;
+}
+@keyframes contact-icon-float{
+  0%,100%{transform:translateY(0);}
+  50%    {transform:translateY(-6px);}
+}
+@media(prefers-reduced-motion:reduce){
+  .contact-mail-icon{animation:none;}
+}
+.contact-mail{font-family:"Space Grotesk",sans-serif;font-weight:600;
+  font-size:clamp(1.7rem,6vw,4rem);color:var(--ink);word-break:break-word;display:inline-block;
+  transition:color .3s;letter-spacing:-.02em;}
+.contact-mail:hover{color:var(--royal);}
+.socials{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;}
+.socials a{border:1px solid var(--line);border-radius:999px;padding:12px 24px;font-size:.95rem;
+  display:inline-flex;align-items:center;gap:.6em;transition:border-color .25s,color .25s,transform .25s var(--ease);}
+.socials a:hover{border-color:var(--royal);color:var(--royal);transform:translateY(-3px);}
+.contact-grid{display:grid;grid-template-columns:1fr;gap:50px;margin-top:60px;}
+@media(min-width:820px){.contact-grid{grid-template-columns:1.4fr .6fr;}}
+.contact-side dt{font-family:"Space Mono",monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;}
+.contact-side dd{margin:0 0 24px;font-weight:500;}
+
+/* =========================================================
+   Footer
+   ========================================================= */
+.site-footer{border-top:1px solid var(--line);padding:56px var(--pad) 40px;}
+.footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;align-items:flex-end;}
+.footer-top .big{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:clamp(1.6rem,4vw,2.6rem);
+  letter-spacing:-.02em;max-width:14ch;}
+.footer-links{display:flex;gap:26px;flex-wrap:wrap;font-family:"Space Mono",monospace;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;}
+.footer-links a{color:var(--muted);transition:color .2s;}
+.footer-links a:hover{color:var(--ink);}
+.footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:50px;
+  padding-top:24px;border-top:1px solid var(--line);color:var(--muted);
+  font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;}
+/* with the link row gone this is the only footer content, so the divider would rule off nothing */
+.footer-bottom:first-child{margin-top:0;padding-top:0;border-top:none;}
+
+/* =========================================================
+   Page transition overlay
+   ========================================================= */
+.page-transition{
+  position:fixed;inset:0;z-index:300;background:var(--ink);transform:translateY(100%);pointer-events:none;
+}
+.page-transition.cover{transform:translateY(0);transition:transform .5s var(--ease);}
+.page-transition.reveal{transform:translateY(-100%);transition:transform .6s var(--ease);}
+.page-transition .pt-mark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-family:"Space Grotesk",sans-serif;font-weight:700;color:var(--bg);font-size:2rem;opacity:0;transition:opacity .3s;}
+.page-transition .pt-mark span{color:#8ea2ff;}
+.page-transition.cover .pt-mark{opacity:1;}
+
+/* =========================================================
+   Reduced motion
+   ========================================================= */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;animation-iteration-count:1!important;
+    transition-duration:.001ms!important;scroll-behavior:auto!important;}
+  .reveal{opacity:1;transform:none;}
+  .reveal-line>*{transform:none;}
+  .marquee-track{animation:none;}
+  .cursor-dot,.cursor-ring{display:none;}
+  body.cursor-on{cursor:auto;}
+}
+
+/* =========================================================
+   Bubble navigation (home) — zig-zag column over a moving field
+   ========================================================= */
+/* ONE field pinned behind the hero AND the explore section — a single canvas means a
+   single continuous shader, so there's no seam where the two sections meet */
+/* overflow:clip is load-bearing. .field-bg uses margin-bottom:-100vh to sit behind the hero,
+   which makes its margin box zero-height — so position:sticky lets the canvas slide a full
+   viewport BELOW this wrapper and paint over the marquee and the CTA (it's positioned, those
+   are static). Clipping contains it. `clip` (not `hidden`) — hidden would create a scroll
+   container and break the sticky. */
+.field-wrap{position:relative;overflow:clip;}
+.field-bg{
+  position:sticky;top:0;height:100vh;margin-bottom:-100vh;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(58% 52% at 50% 46%,#cfe6f5,#d9f0e0 40%,#eef0d6 66%,var(--bg) 84%);
+}
+.field-bg canvas{display:block;width:100%;height:100%;}
+/* padding:0 — the generic section padding would push content down and break the field flow */
+.bubbles{position:relative;z-index:1;padding:0;}
+.bubbles-content{position:relative;z-index:2;padding:clamp(48px,9vh,120px) 0 clamp(60px,10vh,140px);}
+.bubble-col{position:relative;margin-top:clamp(10px,4vh,40px);}
+.bubble-row{display:flex;align-items:center;min-height:46vh;padding:0 clamp(18px,7vw,110px);}
+.bubble-row.left{justify-content:flex-start;}
+.bubble-row.right{justify-content:flex-end;}
+/* pixel-art shell buttons (scallop/nautilus/conch, replacing the old flower) — spin while
+   hovered. Label sits BELOW the shell now rather than overlaid on top of it, so .bubble
+   stacks vertically instead of grid-centring shell+label on the same cell. */
+.bubble{
+  position:relative;width:clamp(180px,28vw,265px);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  gap:clamp(10px,1.6vw,18px);
+  background:none;border-radius:0;box-shadow:none;overflow:visible;
+  opacity:0;transform:scale(.4) translateY(26px);
+  transition:transform .9s cubic-bezier(.34,1.56,.64,1),opacity .7s ease;
+}
+.flower{
+  width:100%;aspect-ratio:1;height:auto;display:block;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 22px 28px rgba(10,20,60,.38));
+  animation:flower-spin 9s linear infinite;
+  animation-play-state:paused;              /* only spins on hover */
+  transition:filter .4s var(--ease);
+}
+.bubble:hover .flower{animation-play-state:running;filter:drop-shadow(0 30px 40px rgba(10,20,60,.5));}
+@keyframes flower-spin{to{transform:rotate(360deg);}}
+.bubble.is-in{opacity:1;transform:none;}
+.bubble:hover{transform:scale(1.04);}
+.bubble-label{
+  position:relative;z-index:2;pointer-events:none;
+  font-family:"Space Grotesk",sans-serif;font-weight:700;
+  font-size:clamp(.68rem,1vw,.85rem);line-height:1.15;letter-spacing:-.01em;
+  color:var(--ink);text-align:center;max-width:100%;
+  text-shadow:0 1px 3px rgba(255,255,255,.5);
+  display:inline-flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.25em;
+  transition:transform .35s var(--ease);
+}
+.bubble-label .arrow{opacity:0;transform:translateX(-4px);font-size:.85em;transition:opacity .3s,transform .3s var(--ease);}
+.bubble:hover .bubble-label .arrow{opacity:1;transform:none;}
+.bubble:focus-visible{outline:3px solid var(--royal);outline-offset:8px;border-radius:14px;}
+@media(max-width:640px){
+  .bubble{width:clamp(165px,60vw,250px);}
+  .bubble-row{min-height:34vh;padding:0 14px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .bubble{opacity:1!important;transform:none!important;transition:none!important;}
+  .flower{animation:none!important;}
+  .field-bg{position:absolute;inset:0;height:100%;margin:0;}
+}
+
+/* =========================================================
+   Carousel (home) — an INTERACTIVE 3D curved carousel. Images
+   sit on a cylinder (the ring); you drag / swipe (or arrow-key)
+   to rotate it, and it snaps to the nearest card. Centre card
+   forward + flat, sides rotated back in perspective. No text.
+   Sits on the moving field. Rotation is driven by JS, not CSS.
+   ========================================================= */
+.intro-row{
+  /* --char-w now lives on :root (see there) — kept working here purely by inheritance */
+  --char-gap:clamp(6px,1vw,16px);         /* shared with .intro-hero's gap — tightened so
+                                              text/character/polaroid read as one cluster */
+  position:relative;
+  margin:0;
+  /* clears .site-header (position:fixed) — same formula as .page-top; see there. */
+  padding-top:clamp(115px,calc(2vw + 90px),135px);
+  text-align:left;                        /* the whole intro is left-aligned on the page */
+}
+
+/* HERO LOCKUP — flower portrait + the greeting, side by side, centred as one unit on the
+   page (max-width:fit-content + margin:auto shrink-wraps the row so the tagline's
+   flex-grow has no extra width to expand into — otherwise it would still stretch edge to
+   edge regardless of justify-content). Just the greeting + character now — the tagline
+   sits below as its own full-width line (see .intro-tagline), not squeezed into this row. */
+.intro-hero{
+  display:flex;align-items:center;flex-wrap:wrap;justify-content:center;
+  gap:var(--char-gap);
+  padding:0 var(--pad);
+  max-width:fit-content;margin:0 auto;
+}
+/* the "and i like to make cool products with a twist" line — same voice as the other
+   intro copy (.about-copy-line), sized down a touch since it's a secondary line under
+   the big greeting rather than a paragraph of its own. Centred under the greeting+
+   character row — margin:auto centres the box (overriding .intro-row's text-align:left
+   inheritance would only centre the text within the box, not the box itself). */
+/* styled the same as the heading above it (.carousel-intro) — same size/weight/shadow —
+   rather than smaller secondary copy. Wraps (no more forced single nowrap line) since
+   at heading size the full sentence no longer fits one line on narrow phones. */
+.intro-tagline{
+  margin:clamp(14px,2.2vh,26px) auto 0;
+  padding:0 var(--pad);
+  max-width:34ch;
+  text-align:center;
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(.9rem,3vw,2.3rem);line-height:1.05;letter-spacing:-.035em;
+  text-shadow:0 2px 18px rgba(255,255,255,.55);
+}
+/* the pixel-art character. Square box sized close to her actual sprite (she doesn't fill
+   the full 108x108 canvas — there's headroom above/below in the source GIFs). No
+   lateral movement any more — no walking stage (see initCharacterSequence, app.js), so
+   she just stays in her natural flex position, now on the FAR right (after .intro-me —
+   see the DOM order in index.html). Two things animate: she falls in from above the
+   page over the same 1.8s her falling.gif's actual fall motion takes
+   (character-fall-in, once — falling.gif's own last frame, a wave, then holds for an
+   extra 0.5s baked into the GIF itself, so she visually lands at 1.8s and just keeps
+   waving, static, until the GIF moves on at 2.3s); and once she's thrown the pokeball
+   (pokemon-ball-throw.gif ends at t=3.7s — 5 frames, shorter than the old throw clip),
+   character-vanish fades her out and removes her from the flex row entirely
+   (display:none at 100%, a discrete property browsers only flip once the animation
+   reaches it). */
+.intro-character{
+  position:relative;flex:none;
+  width:var(--char-w);aspect-ratio:1;
+  animation:
+    character-fall-in 1.8s cubic-bezier(.3,1.4,.6,1) both,
+    character-vanish .6s var(--ease) 3.7s forwards;
+}
+/* a single fall-and-settle — 0%/100% only. The timing function itself
+   (cubic-bezier(.3,1.4,.6,1), whose y1 control point exceeds 1) already overshoots
+   past translateY(0) and corrects, giving one landing bounce for free; there used to
+   be EXTRA 62%/82% keyframes on top of that overshooting the rest position a second
+   time on the way down, which read as her bouncing twice — a second, unwanted "jump"
+   partway through that had nothing to do with landing. Removed; the jump only
+   happens once now, right at the start. */
+@keyframes character-fall-in{
+  0%  {transform:translateY(-230px);}
+  100%{transform:translateY(0);}
+}
+@keyframes character-vanish{
+  0%  {opacity:1;}
+  100%{opacity:0;display:none;}
+}
+.intro-character img{
+  width:100%;height:100%;display:block;
+  object-fit:contain;
+  image-rendering:pixelated;   /* stay crisp/blocky when scaled up, not blurred */
+  position:relative;z-index:1;   /* sits above the ::before spotlight glow */
+  transform:scaleX(-1);   /* mirrored to face left, toward "Ella"/the polaroid — the
+                              direction she now throws in, since she's the one
+                              standing on the right now. Applies to whatever GIF is
+                              currently loaded (falling/rotating/pokemon-throw all
+                              share this one <img>), no per-clip handling needed. */
+}
+/* a soft spotlight behind her — like the cartoon-overlay pop in Lizzie McGuire, where
+   the animated aside visually lifts off the live scene. Fades in once she's landed
+   (t=1.8s, right as character-fall-in finishes) and then just stays lit — a constant
+   presence behind her through the throw and beyond — rather than the brief flourish
+   it used to be, so `both` holds its 100% state forever instead of fading back out. */
+.intro-character::before{
+  content:"";
+  position:absolute;inset:-65% -85%;z-index:0;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,.9) 0%,rgba(255,255,255,.4) 45%,rgba(255,255,255,0) 72%);
+  opacity:0;pointer-events:none;
+  animation:intro-spotlight-in .8s var(--ease) 1.8s both;
+}
+@keyframes intro-spotlight-in{
+  0%   {opacity:0;transform:scale(.6);}
+  100% {opacity:1;transform:scale(1);}
+}
+/* the polaroid — now sits right next to "Ella" from the start (DOM order, see
+   index.html), with the character further right beyond it. No slide/recentre needed
+   here any more: she's not adjacent to this element any more, so her vanishing later
+   doesn't open a gap next to it to close. */
+.intro-me{
+  --accent:var(--royal);
+  display:flex;align-items:center;gap:clamp(6px,1vw,12px);
+  margin-left:2.2cm;
+}
+/* bare photo, no polaroid card/caption — just a slight tilt + soft shadow so it still
+   reads as a physical print stuck on the page rather than a flat UI thumbnail. Spins
+   in (see intro-photo-spin-in) right as she finishes her throw, t=3.7s. Sized 30%
+   larger than the original polaroid (clamp(68px,8.6vw,106px) * 1.3). */
+.intro-me-photo{
+  margin:0;width:clamp(88.4px,11.18vw,137.8px);
+  display:flex;flex-direction:column;align-items:center;
+  transform:rotate(3deg);
+  opacity:0;
+  /* 3.7s = the end of pokemon-ball-throw.gif (starts t=2.7s, 5 frames * 0.2s) —
+     she's released the ball, and starts vanishing, right as this fires. */
+  animation:intro-photo-spin-in .9s var(--ease) 3.7s both;
+}
+.intro-me-photo img{
+  width:100%;aspect-ratio:3/4;object-fit:cover;display:block;
+  box-shadow:0 10px 18px rgba(20,20,45,.22);
+}
+/* spins in from flat/tiny/invisible, a couple of full turns, settling at the same
+   rotate(3deg) rest tilt as before. */
+@keyframes intro-photo-spin-in{
+  0%  {opacity:0;transform:rotate(-660deg) scale(.4);}
+  70% {opacity:1;transform:rotate(14deg) scale(1.06);}
+  100%{opacity:1;transform:rotate(3deg) scale(1);}
+}
+@media(prefers-reduced-motion:reduce){
+  .intro-me{animation:none;transform:translateX(calc(-1 * var(--char-w) * .3));}
+  .intro-me-photo{opacity:1;transform:rotate(3deg);animation:none;}
+}
+
+/* the greeting — the page's loudest voice: much larger than the body lines, tighter
+   tracking, and a soft shadow so it lifts off the moving shader field behind it */
+.carousel-intro{
+  position:relative;z-index:2;
+  margin:0;
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(1.5rem,4vw,3rem);line-height:1.05;letter-spacing:-.035em;
+  text-shadow:0 2px 18px rgba(255,255,255,.55);
+}
+/* one word at a time — a quick stagger now that there's no surfer ride to wait for */
+.carousel-intro .intro-word{
+  display:inline-block;
+  animation:word-in .26s cubic-bezier(.22,.61,.36,1) both;
+}
+.carousel-intro .intro-word:nth-child(1){animation-delay:.15s;}
+.carousel-intro .intro-word:nth-child(2){animation-delay:.4s;}
+.carousel-intro .intro-word:nth-child(3){animation-delay:.65s;}
+@keyframes word-in{
+  from{opacity:0;transform:translateY(.35em);}
+  to{opacity:1;transform:none;}
+}
+@media(max-width:720px){
+  /* stack the lockup — side by side leaves too little width for either at this size.
+     align-items now controls the cross axis (horizontal, since the flex direction is
+     column here) — centred to match the desktop layout. */
+  .intro-hero{flex-direction:column;align-items:center;gap:clamp(14px,2.5vh,24px);}
+}
+@media(prefers-reduced-motion:reduce){
+  /* no staggered reveal, no fall-in/walk/vanish — skip straight to the end state:
+     she's gone, only the polaroid (.intro-me-photo, reduced-motion rule above) sits
+     next to the words. */
+  .carousel-intro .intro-word{animation:none;opacity:1;transform:none;}
+  .intro-character{display:none;}
+}
+
+
+/* screen-reader-only: the animated "Hi, I'm Ella / And this is me, a Graduate…" text is
+   aria-hidden (it types/erases live, which VoiceOver etc. would read as noise), so this
+   gives assistive tech one plain, static sentence instead. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;
+}
+
+/* HOBBY LIST — replaces the old typed "I try my hand at many things: surfing, hiking,
+   boxing" sentence + floating icon strip with a plain list: the title (.hobby-title) on
+   the left, and one fixed-size slot on the right (.hobby-visual) holding both the pixel
+   icon and the real photo stacked on top of each other — the icon shows first, then
+   crossfades into the photo, staggered one row after another via .hobby-photo's
+   animation-delay. Sits directly under the "Hi, I'm Ella" greeting. Static (no JS typing
+   needed for a list) — each item just fades/slides in via a staggered CSS animation
+   once the hero above has settled. The .about-line/.about-strip rules below are kept
+   for the older typed-sentence demo pages, which still use them. */
+.hobby-list{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;align-items:flex-start;   /* rows share one left edge */
+  margin:clamp(24px,4vh,48px) 0 0;padding:0;   /* now sits under its own "About me" eyebrow, not "Hi" */
+  list-style:none;
+}
+.hobby-item{
+  display:flex;align-items:flex-start;
+  gap:clamp(24px,6vw,90px);
+  width:min(640px,88vw);
+  opacity:0;
+  animation:hobby-in .6s var(--ease) both;
+}
+.hobby-item:nth-child(1){animation-delay:1.5s;}
+.hobby-item:nth-child(2){animation-delay:1.72s;margin-top:1cm;}
+.hobby-item:nth-child(3){animation-delay:1.94s;margin-top:1cm;}
+@keyframes hobby-in{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+.hobby-title{
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(1.02rem,2vw,1.45rem);line-height:1.2;letter-spacing:-.01em;
+}
+/* one fixed-size slot on the right — icon and photo are absolutely stacked inside it so
+   the crossfade swaps between them in place rather than the row resizing. */
+.hobby-visual{
+  position:relative;flex:none;
+  width:clamp(108px,19.2vw,228px);aspect-ratio:1;   /* 20% larger than clamp(90px,16vw,190px) */
+}
+.hobby-icon{
+  position:absolute;inset:0;margin:auto;
+  width:clamp(38px,4.6vw,56px);height:clamp(38px,4.6vw,56px);
+  object-fit:contain;object-position:center;
+  image-rendering:pixelated;
+  animation:strip-float 2.6s ease-in-out infinite,hobby-icon-out .6s var(--ease) forwards;
+}
+.hobby-item:nth-child(1) .hobby-icon{animation-delay:0s,2.5s;}
+.hobby-item:nth-child(2) .hobby-icon{animation-delay:0s,3s;}
+.hobby-item:nth-child(3) .hobby-icon{animation-delay:0s,3.5s;}
+@keyframes hobby-icon-out{to{opacity:0;transform:scale(.6);}}
+.hobby-photo{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  box-shadow:0 14px 26px -12px rgba(20,20,45,.5);
+  opacity:0;
+  animation:hobby-photo-in .6s var(--ease) forwards;
+}
+.hobby-item:nth-child(1) .hobby-photo{animation-delay:2.5s;}
+.hobby-item:nth-child(2) .hobby-photo{animation-delay:3s;}
+.hobby-item:nth-child(3) .hobby-photo{animation-delay:3.5s;}
+@keyframes hobby-photo-in{to{opacity:1;}}
+@media(prefers-reduced-motion:reduce){
+  .hobby-item{opacity:1;animation:none;}
+  .hobby-icon{animation:none;opacity:0;}
+  .hobby-photo{animation:none;opacity:1;}
+}
+/* the hobby images split the first intro paragraph in two (see about.html) — the
+   surf/box/hike lines themselves moved up into the intro paragraph as prose, so this
+   is just a plain row of the same icon→photo crossfade visuals, no title text.
+   Overrides .hobby-item's title-row width/gap/stacking, which don't apply without a
+   title. */
+.hobby-list-bottom{
+  position:relative;z-index:2;
+  display:flex;flex-wrap:wrap;gap:clamp(16px,3vw,32px);
+  margin:0;padding:0;
+  list-style:none;
+}
+.hobby-list-bottom .hobby-item{width:auto;gap:0;margin-top:0;}
+/* ABOUT LINE (legacy) — the older typed "I try my hand at many things: surfing, hiking,
+   boxing" sentence + photo strip, kept only for the standalone demo pages that still use
+   it; the live site now uses .hobby-list above instead. */
+.about-line{
+  position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+  gap:clamp(12px,2vw,26px);
+  margin:clamp(18px,3vh,34px) 0 0;padding:0 var(--pad);
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:400;color:var(--royal);   /* light by default — only the hobby words read bold */
+  font-size:clamp(1.02rem,2vw,1.45rem);line-height:1.35;letter-spacing:-.01em;
+  /* the field behind this is a moving blue/white wash, so the copy can't rely on a fixed
+     background contrast. A tight white halo keeps royal type crisp over the deeper bands. */
+  text-shadow:0 0 10px rgba(255,255,255,.92),0 0 3px rgba(255,255,255,.85);
+}
+.about-line-text{margin:0;}
+.about-line-text b{font-weight:700;}
+.about-me-caret{
+  display:inline-block;width:.09em;height:.85em;margin-left:.04em;
+  background:var(--royal);vertical-align:-.1em;
+  opacity:0;                               /* JS fades it in once typing begins */
+}
+.about-me-caret.is-on{animation:caret-blink 1s step-end infinite;}
+@keyframes caret-blink{ 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+/* the strip — three small stills side by side (surf, hike, boxing placeholder), sized so
+   the whole row of them fits beside the sentence in one line on desktop. All share one
+   fixed portrait frame: the sources mix portrait and landscape, and uneven tiles would
+   make the row look ragged. */
+.about-strip{display:inline-flex;gap:clamp(8px,1vw,14px);}
+.about-strip img{
+  width:clamp(94px,12.3vw,162px);aspect-ratio:3/4;   /* +30% then a further +35% on the first cut */
+  object-fit:cover;object-position:center;display:block;
+  border-radius:10px;
+  box-shadow:0 14px 26px -12px rgba(20,20,45,.5);
+  opacity:0;transform:translateX(-12px) scale(.94);
+  transition:opacity .5s var(--ease),transform .5s var(--ease);
+}
+.about-strip img.is-in{opacity:1;transform:none;}
+
+/* placeholder wrapper — small and background-less on purpose: no card, no shadow, so the
+   icon just floats directly on the animated field/page background behind it rather than
+   sitting in a boxed-off panel. Square (not the photos' 3:4) since that's their natural
+   shape. Smaller than the surf photo, so align-self:center keeps it vertically centred
+   against that taller neighbour instead of stretching or snapping to the row's top.
+   The bob lives on this WRAPPER, not the <img>, so it can't collide with the <img>'s own
+   one-time reveal transition — both animate `transform`, and if they were on the same
+   element the infinite bob would simply overwrite/cancel the slide-in reveal. */
+.strip-placeholder{
+  display:block;align-self:center;
+  width:clamp(44px,5.6vw,74px);aspect-ratio:1;
+  animation:strip-float 2.6s ease-in-out infinite;
+}
+.strip-placeholder img{
+  width:100%;height:100%;
+  object-fit:contain;object-position:center;   /* show the whole icon — it's not a crop-to-fill photo */
+  image-rendering:pixelated;                   /* stay crisp/blocky when scaled up from its small source */
+  box-shadow:none;border-radius:0;background:none;   /* no card — she blends straight into the page behind her */
+}
+@keyframes strip-float{
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  50%    {transform:translateY(-6px) rotate(-3deg);}
+}
+@media(prefers-reduced-motion:reduce){
+  .strip-placeholder{animation:none;}
+}
+
+/* the two follow-up lines (design passion + "check out my work below") — same voice as
+   .about-line but plain paragraphs (no strip), so they can't just extend .about-line's
+   flex layout. Capped width so the long paragraph wraps sensibly instead of stretching
+   edge-to-edge on wide screens. */
+.about-copy-line{
+  position:relative;z-index:2;
+  max-width:64ch;
+  margin:.75em 0 0;padding:0 var(--pad);   /* left-aligned, capped so it doesn't stretch edge-to-edge */
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:400;color:var(--royal);
+  font-size:clamp(1.02rem,2vw,1.45rem);line-height:1.4;letter-spacing:-.01em;
+  text-shadow:0 0 10px rgba(255,255,255,.92),0 0 3px rgba(255,255,255,.85);  /* see .about-line */
+}
+
+/* brought back as its own line — same voice as .mini-carousel-caption/.about-copy-line
+   (Space Mono, bold, royal blue) — sitting above the button, no glow behind the text. */
+.find-out-more{
+  position:relative;z-index:2;
+  margin:2cm 0 0;
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);
+  font-size:clamp(.85rem,1.6vw,1.1rem);letter-spacing:-.01em;
+}
+/* the Selected Works button — fades in on a delay once the last typed line finishes
+   (toggled via .is-in, initCharacterSequence(), app.js) rather than on scroll. */
+/* top margin -3cm (3cm→0cm) to move the button up. */
+.intro-cta{
+  position:relative;z-index:2;
+  display:flex;justify-content:flex-start;
+  padding:0 var(--pad);
+  margin:calc(clamp(10px,1.6vh,18px) + 1cm) 0 5cm;
+}
+/* a duplicate of the header's EGD logo badge (.brand/.brand-glow just below) — same
+   masked radial-gradient blue glow + shimmer-on-hover recipe, reused verbatim (see
+   brand-shimmer keyframe), just widened into an ellipse and carrying "Selected Works"
+   as white text instead of the "egd" wordmark image (that's baked-in art, not
+   swappable text). intro-work-bubble is a bare hook, styled by .egd-badge below. */
+.egd-badge{
+  position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:clamp(68px,9.6vw,102px);aspect-ratio:1.35;   /* 20% smaller than clamp(85px,12vw,128px) */
+  opacity:0;transform:scale(.4) translateY(26px);
+  transition:transform .9s cubic-bezier(.34,1.56,.64,1),opacity .7s ease;
+}
+.egd-badge.is-in{opacity:1;transform:none;}
+/* outermost layer — a wide soft white glow, sitting behind everything else including
+   the blue glow below. */
+.egd-badge-glow-white{
+  position:absolute;inset:-75% -38%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(255,255,255,.85) 0%,rgba(255,255,255,.4) 55%,rgba(255,255,255,0) 100%);
+}
+/* the blue glow (same masked radial-gradient + shimmer-on-hover recipe as the header's
+   .brand-glow) — pulled in tighter than before so it sits right around the white
+   border, between it and the wider white glow above. */
+.egd-badge-glow{
+  position:absolute;inset:-22% -9%;pointer-events:none;
+  background:
+    linear-gradient(115deg,transparent 32%,rgba(180,218,255,.55) 48%,transparent 64%) 0 0/260% 100% no-repeat,
+    radial-gradient(closest-side,#3050dd 0%,#2340c8 50%,rgba(35,64,200,.55) 72%,rgba(35,64,200,0) 100%);
+  -webkit-mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  mask-image:radial-gradient(closest-side,#000 0%,#000 66%,transparent 100%);
+  animation:brand-shimmer 2.6s linear infinite;
+  animation-play-state:paused;                 /* only shimmers on hover, same as .brand-glow */
+  transition:transform .4s var(--ease);
+}
+.egd-badge:hover .egd-badge-glow{animation-play-state:running;transform:scale(1.06);}
+/* the solid ellipse (user-supplied reference image, no ring) — same royal blue as the
+   rest of the page's text/accents, with a thin white border ringing it, then the blue
+   glow immediately around that, then the white glow beyond that. */
+.egd-badge-shape{
+  position:absolute;inset:0;pointer-events:none;
+  border-radius:50%;background:var(--royal);
+  border:1.5px solid #fff;
+}
+/* text-align:right (not center) so the shorter second line ("Works") sits tucked in
+   from the right edge under the longer first line ("Selected") — the stagger visible
+   in the reference image. */
+.egd-badge-text{
+  position:relative;z-index:1;
+  font-family:"Space Grotesk",sans-serif;font-weight:700;
+  font-size:clamp(.62rem,1.36vw,.85rem);line-height:1.15;letter-spacing:-.01em;   /* 20% smaller than clamp(.77rem,1.7vw,1.06rem) */
+  color:#fff;text-align:right;
+  text-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.egd-badge:focus-visible{outline:3px solid var(--royal);outline-offset:8px;border-radius:999px;}
+@media(max-width:640px){
+  .egd-badge{width:clamp(58px,16.3vw,82px);}
+  .egd-badge-text{font-size:clamp(.48rem,2.16vw,.62rem);}
+}
+
+@media(prefers-reduced-motion:reduce){
+  /* no typing, no slide — the final state is simply present */
+  .about-strip img{opacity:1;transform:none;transition:none;}
+  .about-me-caret{display:none;}
+  .egd-badge{opacity:1!important;transform:none!important;transition:none!important;}
+  .egd-badge-glow{animation:none!important;}
+}
+
+.carousel{
+  position:relative;z-index:1;
+  margin-top:clamp(40px,6vh,90px);
+  padding:clamp(14px,2.4vh,34px) 0 clamp(20px,3vh,40px);
+  overflow:hidden;                        /* clip the side/back cards as they wrap away */
+  /* the ring dissolves into the field only at the very edges — cards reach nearly full width */
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+  opacity:0;transition:opacity .9s var(--ease);
+}
+.carousel.is-in{opacity:1;}
+/* the 3D scene — far camera so the wide fan reads small (zoomed out). grab cursor = draggable */
+.carousel-stage{
+  position:relative;
+  height:clamp(200px,32vh,290px);
+  perspective:3200px;
+  perspective-origin:50% 50%;
+  cursor:grab;touch-action:pan-y;         /* let vertical scroll through; we handle horizontal */
+  outline:none;
+}
+.carousel-stage.grabbing{cursor:grabbing;}
+/* the surfer — retired from her old intro ride, she IS the cursor while you slide the ring.
+   position:fixed (viewport coords, like the site's dot/ring cursor) so the section's
+   overflow clip and edge fade mask can't cut her off; JS pins her to the pointer. */
+.surfer-cursor{
+  position:fixed;left:0;top:0;z-index:60;
+  height:clamp(64px,9vh,104px);width:auto;
+  pointer-events:none;user-select:none;
+  filter:drop-shadow(0 10px 18px rgba(20,20,45,.28));
+  opacity:0;transition:opacity .2s var(--ease);
+  will-change:transform;
+}
+.surfer-cursor.is-on{opacity:1;}
+@media(hover:hover) and (pointer:fine){
+  /* she replaces the pointer entirely on the stage — native grab cursor off, and the
+     dot/ring cursor out of her way (!important: initCursor() toggles their inline opacity) */
+  .carousel-stage,.carousel-stage.grabbing{cursor:none;}
+  body.surfer-zone .cursor-dot,body.surfer-zone .cursor-ring{opacity:0 !important;}
+}
+@media(hover:none),(pointer:coarse){.surfer-cursor{display:none;}}   /* touch: no cursor to replace */
+
+/* the hammer — the landing page's cursor (replaces the dot+ring there entirely, see
+   initHammerPageCursor(), app.js), swinging 45deg while the mini carousel's dragged.
+   Same body-level position:fixed pattern as .surfer-cursor above. Small pixel-art icon
+   (native 48x48), so it's sized much smaller than the surfer and kept crisp/blocky rather
+   than smoothed when scaled up. body.cursor-on{cursor:none} (below) hides the native
+   cursor everywhere on the page, same rule the dot+ring already relies on elsewhere. */
+.hammer-cursor{
+  position:fixed;left:0;top:0;z-index:60;
+  height:clamp(40px,6vh,64px);width:auto;
+  image-rendering:pixelated;
+  pointer-events:none;user-select:none;
+  filter:drop-shadow(0 8px 14px rgba(20,20,45,.28));
+  opacity:0;transition:opacity .2s var(--ease);
+  will-change:transform;
+}
+.hammer-cursor.is-on{opacity:1;}
+@media(hover:none),(pointer:coarse){.hammer-cursor{display:none;}}   /* touch: no cursor to replace */
+.carousel-stage:focus-visible{outline:3px solid var(--royal);outline-offset:6px;border-radius:18px;}
+/* the cylinder. JS sets its rotateY; the transition is toggled on only for the snap-back. */
+.carousel-ring{
+  position:absolute;inset:0;
+  transform-style:preserve-3d;
+  will-change:transform;
+}
+/* each card is CENTRED on the stage axis with px margins (so the rotation axis is the stage
+   centre), then the inline transform `rotateY(θ) translateZ(R)` sets it on the cylinder. */
+.carousel-card{
+  position:absolute;top:50%;left:50%;
+  width:var(--cardw,160px);height:var(--cardh,210px);
+  margin-left:calc(var(--cardw,160px) / -2);
+  margin-top:calc(var(--cardh,210px) / -2);
+  border-radius:14px;overflow:hidden;background:transparent;
+  box-shadow:0 22px 46px -22px rgba(20,20,45,.55);
+  backface-visibility:hidden;              /* cards facing away (round the back) vanish cleanly */
+  -webkit-backface-visibility:hidden;
+}
+/* contain (not cover) — the whole photo shows; the card is transparent so the moving field
+   shows through the letterbox gaps instead of a white mat */
+.carousel-card img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none;}
+/* a soft inner edge so each card reads as a distinct pane in the fan */
+.carousel-card::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
+}
+/* drag hint below the ring */
+.carousel-hint{
+  margin:clamp(8px,1.4vh,18px) auto 0;text-align:center;
+  font-family:"Space Mono",monospace;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(20,20,45,.42);user-select:none;pointer-events:none;
+  transition:opacity .5s var(--ease);
+}
+.carousel.interacted .carousel-hint{opacity:0;}
+@media(prefers-reduced-motion:reduce){
+  .carousel{opacity:1;}
+}
+
+/* MINI CAROUSEL — a smaller instance of the exact carousel above (same .carousel/
+   .carousel-stage/.carousel-ring/.carousel-card/.carousel-hint classes, same drag-rotate-
+   snap mechanic via initCarouselInstance()), showing PROJECTS with a caption underneath
+   synced to whichever card faces forward. These rules only need to override size/spacing —
+   opacity fade-in, edge mask and the interacted→hide-hint behaviour all come free from
+   the base .carousel rules above since they're declared after them in the cascade. */
+.mini-carousel{
+  margin:clamp(40px,7vh,90px) auto 0;
+  padding:0 var(--pad);
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+.mini-carousel-stage{
+  width:min(899px,90vw);          /* +20% x3 from 520px */
+  height:clamp(208px,34.6vh,329px); /* +20% x3 from 120/20vh/190 */
+  perspective:2419px;             /* +20% x3 from 1400px, same depth-to-size ratio */
+}
+/* square corners on the mini carousel's cards only — the big carousel further down keeps
+   its rounded ones, since .carousel-card is shared between both instances */
+.mini-carousel .carousel-card{border-radius:0;}
+.mini-carousel-caption{
+  position:relative;z-index:2;
+  min-height:3.2em;   /* holds the row's height steady across captions of different lengths */
+  margin:calc(clamp(14px,2.4vh,26px) + 0.5cm) 0 0;
+  max-width:52ch;
+  font-family:"Space Mono","SFMono-Regular",ui-monospace,monospace;
+  font-weight:700;color:var(--royal);   /* same royal blue as the heading/tagline — no white glow behind it */
+  font-size:clamp(.95rem,1.7vw,1.2rem);line-height:1.45;letter-spacing:-.01em;
+}
+
+/* =========================================================
+   Experience & skills (about)
+   ========================================================= */
+.exp-grid{display:grid;grid-template-columns:1fr;gap:clamp(40px,6vw,72px);margin-top:48px;}
+@media(min-width:860px){.exp-grid{grid-template-columns:1.05fr .95fr;gap:clamp(48px,7vw,90px);}}
+/* Experience on the left, Skills on the right — reordered via `order` (not moved in
+   the DOM) since .exp-col is a large block; track widths above were swapped to match
+   (exp-col keeps the wider 1.05fr track it always had, just now on the left). */
+.exp-col{order:1;}
+.skills-col{order:2;}
+.exp-title{font-family:"Space Mono",monospace;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--royal);font-weight:400;margin-bottom:28px;}
+.timeline{list-style:none;margin:0;padding:0;position:relative;}
+.timeline::before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--line);}
+.tl-item{position:relative;padding:0 0 30px 34px;}
+.tl-item:last-child{padding-bottom:0;}
+.tl-item::before{content:"";position:absolute;left:0;top:5px;width:16px;height:16px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--royal);}
+.tl-year{font-family:"Space Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:7px;}
+.tl-item h4{font-size:1.15rem;margin-bottom:3px;}
+.tl-org{color:var(--royal);font-weight:500;font-size:.98rem;margin:0 0 6px;}
+.tl-desc{color:var(--muted);font-size:.95rem;margin:0;max-width:52ch;}
+/* photos accompanying a timeline entry — small thumbnail row, same sharp-corner/
+   shadow language as .grad-photo, just tighter since it's inline supporting evidence
+   rather than a standalone photo block. Fixed height + object-fit:contain (not a
+   fixed width/aspect-ratio) so it works for a mix of portrait candid photos and
+   landscape certificates alike — a cover-crop would slice text off a certificate,
+   and a fixed fraction-of-row width left a single photo looking stranded. */
+.tl-photos{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;max-width:52ch;}
+.tl-photos img{
+  height:130px;width:auto;max-width:100%;display:block;object-fit:contain;
+  background:#efeeea;box-shadow:0 10px 22px -14px rgba(20,20,45,.4);
+}
+.skill-group{margin-bottom:26px;}
+.skill-group:last-child{margin-bottom:0;}
+.skill-group h4{font-size:1.02rem;margin-bottom:12px;}
+.tag-list{display:flex;flex-wrap:wrap;gap:9px;}
+.tag-list span{border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:.85rem;
+  color:#33333f;background:var(--paper);transition:border-color .2s,color .2s;}
+.tag-list span:hover{border-color:var(--royal);color:var(--royal);}
+
+/* software tool icons — a home-screen/game-library style grid: a rounded square
+   tile holding just the logo (bg already stripped, see assets/software/*.png),
+   name as its own separate caption underneath. Icon and label are two distinct
+   elements, not one pill, per the "look like game icons" direction.
+   Retro-game item-box treatment: square pixel corners (no border-radius), a
+   chunky stepped bevel built from hard (non-blurred) box-shadow layers instead
+   of a soft drop-shadow, nearest-neighbour icon scaling so the art stays crisp
+   and blocky, and a slow idle bob — like a floating pickup — staggered per
+   tile via nth-child so the row doesn't bob in lockstep. */
+.software-icons{display:flex;flex-wrap:wrap;gap:20px 16px;margin-top:16px;}
+.software-item{display:flex;flex-direction:column;align-items:center;gap:9px;width:76px;text-align:center;}
+.software-tile{
+  display:flex;align-items:center;justify-content:center;
+  width:60px;height:60px;border-radius:0;
+  background:var(--paper);
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.9),
+    inset 3px 0 0 rgba(255,255,255,.9),
+    inset 0 -3px 0 rgba(20,20,28,.18),
+    inset -3px 0 0 rgba(20,20,28,.18),
+    0 0 0 3px var(--paper),
+    0 0 0 4px var(--line),
+    0 5px 0 rgba(20,20,28,.16);
+  animation:tile-float 2.4s ease-in-out infinite;
+  transition:box-shadow .15s,transform .15s;
+}
+.software-item:nth-child(2n) .software-tile{animation-delay:.3s;}
+.software-item:nth-child(3n) .software-tile{animation-delay:.6s;}
+.software-item:nth-child(4n) .software-tile{animation-delay:.9s;}
+.software-item:nth-child(5n) .software-tile{animation-delay:1.2s;}
+.software-tile img{
+  width:34px;height:34px;object-fit:contain;display:block;
+  image-rendering:pixelated;   /* crisp/blocky retro scaling, not smoothed */
+}
+.software-label{font-size:.74rem;line-height:1.25;color:var(--muted);transition:color .2s;}
+.software-item:hover .software-tile{
+  animation-play-state:paused;transform:translateY(-4px) scale(1.08);
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.9),
+    inset 3px 0 0 rgba(255,255,255,.9),
+    inset 0 -3px 0 rgba(20,20,28,.18),
+    inset -3px 0 0 rgba(20,20,28,.18),
+    0 0 0 3px var(--paper),
+    0 0 0 4px var(--royal),
+    0 7px 0 rgba(35,64,200,.28);
+}
+.software-item:hover .software-label{color:var(--royal);}
+@keyframes tile-float{
+  0%,100%{transform:translateY(0);}
+  50%    {transform:translateY(-5px);}
+}
+@media(prefers-reduced-motion:reduce){
+  .software-tile{animation:none;}
+}

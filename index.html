@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGD — Product, Accessibility & Craft</title>
+<meta name="description" content="EGD — a product design portfolio spanning medical & accessibility, woodwork and graphic design.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=209">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="page-transition" aria-hidden="true"><span class="pt-mark">EGD</span></div>
+
+  <!-- Flower shape + petal colours, defined once and reused by each button -->
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+      <path id="flower-path" d="M98.9,50.0C99.0,51.6 98.6,53.2 97.8,54.7C97.0,56.2 95.7,57.6 94.1,58.8C92.5,59.9 90.4,60.9 88.2,61.6C86.0,62.2 83.4,62.7 80.8,62.8C78.2,62.9 75.4,62.6 72.8,62.2C70.1,61.7 66.4,60.1 65.1,60.1C63.7,60.1 64.3,60.8 64.9,62.2C65.4,63.6 67.6,66.4 68.6,68.6C69.7,70.9 70.5,73.3 71.1,75.7C71.6,78.0 71.8,80.4 71.7,82.5C71.6,84.6 71.2,86.7 70.5,88.4C69.8,90.1 68.8,91.6 67.7,92.6C66.5,93.7 65.0,94.4 63.6,94.7C62.1,95.0 60.4,94.9 58.8,94.4C57.3,93.9 55.6,93.0 54.1,91.7C52.6,90.4 51.2,88.7 50.0,86.8C48.8,84.9 47.8,82.6 47.0,80.3C46.3,78.0 45.7,75.3 45.4,72.9C45.1,70.5 45.8,66.3 45.2,65.7C44.6,65.2 43.4,67.8 41.9,69.4C40.5,71.1 38.4,73.7 36.4,75.4C34.4,77.2 32.1,78.8 30.0,80.0C27.8,81.2 25.4,82.1 23.3,82.6C21.2,83.0 19.0,83.1 17.2,82.8C15.3,82.6 13.6,81.9 12.3,80.9C11.1,79.9 10.0,78.6 9.5,77.1C8.9,75.6 8.7,73.8 9.0,71.9C9.2,70.1 9.9,68.1 11.0,66.2C12.0,64.3 13.5,62.3 15.3,60.5C17.0,58.8 19.2,57.1 21.5,55.7C23.8,54.3 26.4,53.0 28.8,52.1C31.2,51.1 35.9,50.7 35.9,50.0C36.0,49.3 31.5,48.9 29.3,48.0C27.0,47.0 24.5,45.9 22.3,44.5C20.2,43.1 18.1,41.5 16.4,39.8C14.7,38.1 13.2,36.2 12.2,34.4C11.2,32.5 10.5,30.5 10.3,28.8C10.0,27.0 10.2,25.2 10.7,23.7C11.2,22.3 12.2,20.9 13.4,19.9C14.6,19.0 16.2,18.2 17.9,17.9C19.6,17.6 21.7,17.6 23.7,18.0C25.8,18.4 28.0,19.2 30.1,20.3C32.2,21.3 34.4,22.8 36.3,24.5C38.3,26.1 40.3,28.5 41.7,30.0C43.2,31.5 44.4,34.0 44.9,33.4C45.5,32.7 44.9,28.4 45.2,25.9C45.5,23.4 46.1,20.7 46.9,18.3C47.7,15.9 48.8,13.6 50.0,11.7C51.2,9.8 52.7,8.1 54.2,6.9C55.8,5.7 57.5,4.8 59.1,4.4C60.7,3.9 62.4,3.9 63.8,4.4C65.3,4.8 66.8,5.6 67.9,6.8C69.0,8.0 70.0,9.7 70.6,11.5C71.2,13.3 71.5,15.5 71.6,17.7C71.6,20.0 71.2,22.5 70.6,24.9C70.0,27.3 69.0,29.8 67.9,32.1C66.7,34.4 64.5,37.2 63.8,38.6C63.2,40.1 62.6,40.8 63.8,40.8C65.1,40.7 68.8,39.0 71.4,38.5C74.1,38.0 76.9,37.7 79.5,37.8C82.1,37.8 84.8,38.1 87.1,38.8C89.4,39.4 91.5,40.3 93.3,41.4C95.0,42.5 96.4,43.9 97.4,45.3C98.3,46.8 98.9,48.4 98.9,50.0Z"/>
+      <!-- exact hues of the shader field (pal()); only lightness is lowered, so they stay the
+           same teal/violet/sky but sit a step darker than the background -->
+      <radialGradient id="fg-teal" cx="35%" cy="28%" r="78%">
+        <stop offset="0%" stop-color="#9EE6DB"/><stop offset="45%" stop-color="#5FDDCA"/>
+        <stop offset="100%" stop-color="#22C3AB"/>
+      </radialGradient>
+      <radialGradient id="fg-violet" cx="35%" cy="28%" r="78%">
+        <stop offset="0%" stop-color="#B8ADF5"/><stop offset="45%" stop-color="#806CEF"/>
+        <stop offset="100%" stop-color="#3E20E9"/>
+      </radialGradient>
+      <radialGradient id="fg-azure" cx="35%" cy="28%" r="78%">
+        <stop offset="0%" stop-color="#7FC8F8"/><stop offset="45%" stop-color="#4DB3F7"/>
+        <stop offset="100%" stop-color="#0B95F2"/>
+      </radialGradient>
+      <!-- the same flower as a reusable CSS clip-path — not currently applied anywhere
+           (the intro used to clip a photo to it before the pixel character replaced that
+           photo), kept here in case a future flower-shaped image wants it. objectBoundingBox
+           wants 0–1 coords while #flower-path is drawn 0–100, hence the scale(0.01). Whatever
+           box uses it must be SQUARE or the petals stretch. -->
+      <clipPath id="flower-clip" clipPathUnits="objectBoundingBox">
+        <use href="#flower-path" transform="scale(0.01)"/>
+      </clipPath>
+    </defs>
+  </svg>
+
+  <header class="site-header">
+    <div class="brand-lockup">
+      <a class="brand magnetic" href="index.html" data-strength="0.4" aria-label="EGD Designs — home">
+        <span class="brand-glow" aria-hidden="true"></span>
+        <img class="brand-logo" src="assets/egd-logo.png" alt="EGD" width="640" height="475">
+      </a>
+      <span class="brand-role">Designs</span>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <!-- each link's pixel-art shell icon (.nav-shell, style.css) is removed from the
+         markup for now — the CSS rule/animation and the SVG assets (assets/about/shell-*)
+         are untouched, so re-adding <img class="nav-shell" src="assets/about/shell-*.svg"
+         alt="" aria-hidden="true"> inside a link restores it. -->
+    <nav class="nav" id="nav">
+      <a href="index.html" class="active"><span>Home</span></a>
+      <a href="work.html"><span>Selected Works</span></a>
+      <a href="about.html"><span>About</span></a>
+      <a href="contact.html"><span>Contact</span></a>
+    </nav>
+  </header>
+
+  <!-- LANDING — just the animated shader field behind the greeting, the hobby list and the
+       "check out my work" teaser. Everything else (About detail, shell nav, carousel) now
+       lives further down in .about-field, outside this wrap, so the interactive field only
+       covers the actual landing view. -->
+  <div class="field-wrap">
+    <div class="field-bg" aria-hidden="true"><canvas id="field-canvas"></canvas></div>
+
+  <div class="intro-row">
+    <div class="intro-hero">
+      <p class="carousel-intro">
+        <span class="intro-word">Hi,</span> <span class="intro-word">I'm</span> <span class="intro-word">Ella</span>
+      </p>
+      <!-- the polaroid now sits right next to "Ella" (DOM order drives flex layout
+           order — it's listed second, the character third). Spins in (see
+           intro-photo-spin-in, style.css) right as the character vanishes, t=3.7s. -->
+      <div class="intro-me">
+        <!-- bare photo, no polaroid card/caption — see .intro-me-photo, style.css -->
+        <figure class="intro-me-photo">
+          <img src="assets/hikerme.jpg" alt="A photo of Ella hiking">
+        </figure>
+      </div>
+      <!-- pixel-art character, now sitting on the FAR right (where the polaroid used to
+           be) — mirrored (scaleX(-1) on the <img>, see .intro-character img) to face
+           left, toward "Ella"/the polaroid, since that's the direction she now throws
+           in. Three separate GIFs chained by initCharacterSequence() (app.js) — GIFs
+           can't be spliced with CSS, so it swaps the <img> src on a timer instead:
+           falling.gif (9 frames, t=0-2.3s — the last frame, a wave, is patched to hold
+           0.7s instead of 0.2s so it reads for longer) → rotating.gif (2 frames,
+           t=2.3-2.7s, turns her to profile) → pokemon-ball-throw.gif (5 frames,
+           t=2.7-3.7s — a supplied "catch" clip played in reverse, so the ball leaves
+           her hand and flies off instead of arriving in it), then settles on the
+           static character-south.png. CSS layers two transforms on top:
+           character-fall-in (drops her from above the page over the same 1.8s the
+           falling.gif's actual fall motion takes — she's landed well before the
+           wave-hold finishes) and character-vanish — once she's thrown, she fades out
+           and is removed from the flex row entirely (t=3.7-4.3s). -->
+      <div class="intro-character" aria-hidden="true">
+        <img src="assets/character-falling.gif" alt="" loading="eager" fetchpriority="high">
+      </div>
+    </div>
+    <!-- sits below the centred greeting+character row, not inline with it, so it can
+         run its own full-width left-aligned line rather than being squeezed into the
+         same shrink-wrapped row (see .intro-hero's max-width:fit-content). -->
+    <p class="intro-tagline reveal">and i like to make cool products with a twist</p>
+    <!-- MINI CAROUSEL — a smaller version of the big drag-rotate-snap carousel further
+         down the page (same mechanic, initCarouselInstance() in app.js), showing PROJECTS
+         instead of personal photos, with a caption underneath synced to whichever card
+         is front-facing (initMiniCarousel()). Reuses makePoster() so it shows Stride's
+         real photo and the same generated poster art used everywhere else — nothing
+         fabricated here. Sits centred, unlike the left-aligned text above it. -->
+    <div class="carousel mini-carousel">
+      <div class="carousel-stage mini-carousel-stage" id="mini-carousel-stage" tabindex="0" role="group"
+           aria-roledescription="carousel" aria-label="My work — drag or use arrow keys to rotate">
+        <div class="carousel-ring" id="mini-carousel-ring"></div>
+      </div>
+      <p class="carousel-hint" aria-hidden="true">Drag to explore ↔</p>
+      <p class="mini-carousel-caption" id="mini-carousel-caption" aria-live="polite"></p>
+      <!-- its shell now lives up in the header nav (see .nav-shell) instead of here. -->
+      <p class="find-out-more">find out more below</p>
+      <!-- a plain solid royal-blue ellipse (user-supplied reference image, no ring) with a
+           thin white border, ringed by two concentric glows: a tighter blue one (the same
+           masked radial-gradient recipe + shimmer-on-hover as the header's EGD logo badge,
+           .brand/.brand-glow) right around the border, then a wider soft white one beyond
+           that — no white backdrop behind it, just the two glows. See .egd-badge,
+           style.css. intro-work-bubble is kept purely as the JS hook
+           initCharacterSequence() (app.js) uses to time this badge's reveal-in with the
+           rest of the intro sequence. -->
+      <div class="intro-cta">
+        <a class="egd-badge intro-work-bubble" href="work.html" aria-label="Selected Works">
+          <span class="egd-badge-glow-white" aria-hidden="true"></span>
+          <span class="egd-badge-glow" aria-hidden="true"></span>
+          <span class="egd-badge-shape" aria-hidden="true"></span>
+          <span class="egd-badge-text">Selected<br>Works</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  </div><!-- /.field-wrap -->
+
+  <!-- the hammer's the mini/project carousel's custom drag cursor — same body-level,
+       position:fixed pattern as the old surfer-cursor (see initHammerCursor(), app.js),
+       so the stage's overflow clip can't cut it off. -->
+  <img class="hammer-cursor" src="assets/hammer-cursor.png?v=1" alt="" aria-hidden="true" draggable="false">
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-bottom">
+        <span>&copy; <span id="yr"></span> EGD</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/effect.js?v=30"></script>
+  <script src="assets/app.js?v=102"></script>
+</body>
+</html>

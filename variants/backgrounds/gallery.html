@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EGD — background experiments</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;
+    font-family:"SFMono-Regular",ui-monospace,Menlo,monospace;}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;}
+  .ui{position:fixed;left:0;right:0;bottom:0;z-index:5;
+    padding:16px 18px 18px;
+    background:linear-gradient(0deg,rgba(0,0,0,.55),rgba(0,0,0,0));
+    display:flex;flex-direction:column;gap:10px;pointer-events:none;}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;pointer-events:auto;}
+  button{
+    font:inherit;font-size:12px;letter-spacing:.03em;
+    padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.08);color:#fff;cursor:pointer;
+    backdrop-filter:blur(6px);transition:background .2s,transform .15s;
+  }
+  button:hover{background:rgba(255,255,255,.18);}
+  button.active{background:#fff;color:#0a1120;border-color:#fff;font-weight:600;}
+  .info{pointer-events:auto;max-width:640px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5);}
+  .info h1{font-size:15px;margin:0 0 4px;letter-spacing:.02em;}
+  .info p{font-size:12.5px;line-height:1.5;margin:0;opacity:.85;}
+  .badge{position:fixed;top:16px;left:18px;z-index:5;color:#fff;font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;opacity:.6;text-shadow:0 1px 4px rgba(0,0,0,.5);}
+  .count{position:fixed;top:16px;right:18px;z-index:5;color:#fff;font-size:11px;
+    opacity:.55;text-shadow:0 1px 4px rgba(0,0,0,.5);}
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="badge">EGD — background experiments</div>
+  <div class="count" id="count"></div>
+  <div class="ui">
+    <div class="info"><h1 id="v-name"></h1><p id="v-blurb"></p></div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+<script>
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+if(!gl){ document.body.innerHTML = '<p style="color:#fff;padding:40px;font-family:sans-serif">WebGL not available in this browser.</p>'; }
+
+const VERT = `attribute vec2 a_pos; void main(){ gl_Position = vec4(a_pos,0.0,1.0); }`;
+
+// shared helpers, prefixed into every fragment shader that wants them
+const NOISE_LIB = `
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);
+  float a=hash(i),b=hash(i+vec2(1.0,0.0)),c=hash(i+vec2(0.0,1.0)),d=hash(i+vec2(1.0,1.0));
+  return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}
+float fbm(vec2 p){float s=0.0,a=0.5;for(int i=0;i<4;i++){s+=a*noise(p);p=p*2.02;a*=0.5;}return s;}
+`;
+
+const HEAD = `precision highp float;
+uniform vec2 u_res; uniform float u_time; uniform vec2 u_mouse;
+#define AR (u_res.x/u_res.y)
+`;
+
+/* ============================================================
+   VARIANTS — each is a full fragment-shader body (HEAD + optional
+   NOISE_LIB + main()). Every one is driven purely by u_time + u_mouse,
+   same uniform contract as the live site's assets/effect.js, so
+   whichever one you pick drops in with no plumbing changes.
+   ============================================================ */
+/* Every variant below is built from EXACTLY two colours — one navy + white — declared as
+   NAVY/WHITE at the top of each main(). All shading, "specular" and grain is a mix()
+   between those two and nothing else (no third accent hue), and each is now biased so
+   WHITE is the dominant area of the frame with navy as the accent/hint, not the reverse
+   — both per explicit request. */
+const VARIANTS = [
+
+{
+  id:'metal-lava',
+  name:'① Metallic Navy Lava Lamp',
+  blurb:'True metaballs (not noise) — 5 rounded blobs drift and merge in a mostly-white sea. Two shades only: navy and white — the blob "specular" is just a brighter mix toward white, not a tint. Blobs sized down and the sea pushed paler so white clearly dominates the frame.',
+  frag: HEAD + `
+#define N 5
+float metaball(vec2 uv, vec2 c, float r){ float d=length(uv-c); return r*r/(d*d+0.0001); }
+void main(){
+  vec3 NAVY=vec3(0.035,0.065,0.16);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+  float t=u_time*0.10;
+
+  vec2 c0=vec2(0.5+0.30*sin(t*0.9+0.0),0.45+0.25*cos(t*0.7+0.0));
+  vec2 c1=vec2(0.5+0.28*sin(t*0.6+2.1),0.55+0.30*cos(t*0.5+1.3));
+  vec2 c2=vec2(0.5+0.34*sin(t*0.4+4.2),0.40+0.22*cos(t*0.8+3.1));
+  vec2 c3=vec2(0.5+0.20*sin(t*1.1+1.0),0.60+0.28*cos(t*0.35+5.0));
+  vec2 c4=vec2(0.5+0.30*sin(t*0.5+3.4),0.48+0.32*cos(t*0.65+2.0));
+  float r0=0.14,r1=0.11,r2=0.15,r3=0.09,r4=0.12;
+
+  vec2 m0=vec2(c0.x*AR,c0.y), m1=vec2(c1.x*AR,c1.y), m2=vec2(c2.x*AR,c2.y),
+       m3=vec2(c3.x*AR,c3.y), m4=vec2(c4.x*AR,c4.y);
+
+  float field = metaball(p,m0,r0)+metaball(p,m1,r1)+metaball(p,m2,r2)+metaball(p,m3,r3)+metaball(p,m4,r4);
+  float edge = smoothstep(0.95,1.35,field);
+
+  float e=0.012;
+  float fxp = metaball(p+vec2(e,0.0),m0,r0)+metaball(p+vec2(e,0.0),m1,r1)+metaball(p+vec2(e,0.0),m2,r2)+metaball(p+vec2(e,0.0),m3,r3)+metaball(p+vec2(e,0.0),m4,r4);
+  float fxn = metaball(p-vec2(e,0.0),m0,r0)+metaball(p-vec2(e,0.0),m1,r1)+metaball(p-vec2(e,0.0),m2,r2)+metaball(p-vec2(e,0.0),m3,r3)+metaball(p-vec2(e,0.0),m4,r4);
+  float fyp = metaball(p+vec2(0.0,e),m0,r0)+metaball(p+vec2(0.0,e),m1,r1)+metaball(p+vec2(0.0,e),m2,r2)+metaball(p+vec2(0.0,e),m3,r3)+metaball(p+vec2(0.0,e),m4,r4);
+  float fyn = metaball(p-vec2(0.0,e),m0,r0)+metaball(p-vec2(0.0,e),m1,r1)+metaball(p-vec2(0.0,e),m2,r2)+metaball(p-vec2(0.0,e),m3,r3)+metaball(p-vec2(0.0,e),m4,r4);
+  vec3 n = normalize(vec3(-(fxp-fxn), -(fyp-fyn), 0.6));
+
+  vec3 lightDir = normalize(vec3(-0.35,0.55,0.7));
+  float spec = pow(max(dot(n, normalize(lightDir+vec3(0.0,0.0,1.0))),0.0), 20.0);
+
+  vec3 blobColor = mix(NAVY, mix(NAVY,WHITE,0.22), clamp(field*0.4,0.0,1.0));
+  blobColor = mix(blobColor, WHITE, spec*0.9);
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float mglow=exp(-dot(p-mp,p-mp)*10.0)*0.08;
+  vec3 sea = mix(NAVY, WHITE, 0.95);
+  vec3 col = mix(sea, blobColor, edge);
+  col = mix(col, WHITE, mglow);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'brushed-steel',
+  name:'② Brushed Pearl Sweep',
+  blurb:'A pale, brushed-metal panel — mostly white with fine navy-tinted grain and two darker navy "shadow" bands sweeping across on a loop, like a reflection passing over satin-finished white metal. Still just navy + white.',
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec3 NAVY=vec3(0.05,0.09,0.20);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+
+  vec3 base = mix(NAVY, WHITE, 0.90);
+  float grain=(noise(vec2(p.x*260.0,p.y*2.4))-0.5);
+  base = mix(base, NAVY, clamp(-grain,0.0,1.0)*0.10);
+  base = mix(base, WHITE, clamp(grain,0.0,1.0)*0.10);
+
+  float ang=0.6;
+  vec2 dir=vec2(cos(ang),sin(ang));
+  float d1=dot(p,dir)-mod(u_time*0.12,3.4)+1.2;
+  float sweep1=exp(-d1*d1*30.0);
+  float d2=dot(p,dir)-mod(u_time*0.12+1.7,3.4)+1.2;
+  float sweep2=exp(-d2*d2*30.0)*0.6;
+
+  vec3 col = mix(base, NAVY, clamp(sweep1+sweep2,0.0,1.0)*0.5);
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float mglow=exp(-dot(p-mp,p-mp)*9.0)*0.14;
+  col = mix(col, WHITE, mglow);
+
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'liquid-mercury',
+  name:'③ Polished Pearl Chrome',
+  blurb:'Domain-warped noise lit as a height-field, like liquid chrome — but inverted so the LIT surface (most of it) reads white/pale, and navy only pools in the shadowed crevices. Reads as pale polished metal with dark blue in the creases, not a dark pool.',
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec3 NAVY=vec3(0.04,0.075,0.18);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y)*2.3;
+  float t=u_time*0.06;
+
+  float h = fbm(p + vec2(fbm(p+t), fbm(p-t)));
+  float e=0.015;
+  float hx = fbm(p+vec2(e,0.0)+vec2(fbm(p+vec2(e,0.0)+t),fbm(p+vec2(e,0.0)-t))) - h;
+  float hy = fbm(p+vec2(0.0,e)+vec2(fbm(p+vec2(0.0,e)+t),fbm(p+vec2(0.0,e)-t))) - h;
+  vec3 n = normalize(vec3(-hx*7.0,-hy*7.0,1.0));
+
+  vec3 lightDir = normalize(vec3(0.4,0.7,0.6));
+  float diff = max(dot(n,lightDir),0.0);
+  float spec = pow(max(dot(reflect(-lightDir,n), vec3(0.0,0.0,1.0)),0.0), 46.0);
+
+  vec3 base = mix(NAVY, WHITE, clamp(diff*1.3,0.0,1.0));
+  base = mix(base, WHITE, spec*0.9);
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y)*2.3;
+  float mglow=exp(-dot(p-mp,p-mp)*2.2)*0.2;
+  base = mix(base, WHITE, mglow);
+
+  gl_FragColor=vec4(clamp(base,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'aurora',
+  name:'④ Pale Sky, Navy Ribbons',
+  blurb:'Inverted aurora — a near-white sky with slow navy ribbons drifting across it, rather than a dark sky with bright ribbons. Different motion language from the other four (flowing curtains, not blobs or sweeps), still strictly two-tone.',
+  frag: HEAD + `
+void main(){
+  vec3 NAVY=vec3(0.04,0.08,0.19);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+  vec3 col = mix(NAVY, WHITE, 0.93);
+  for(int i=0;i<4;i++){
+    float fi=float(i);
+    float speed=0.05+fi*0.015;
+    float freq=3.0+fi*1.3;
+    float y=0.30+0.16*sin(p.x*freq*0.5+u_time*speed+fi*2.1)+fi*0.09;
+    float band=1.0/(1.0+pow((p.y-y)*15.0,2.0));
+    col = mix(col, NAVY, band*0.45);
+  }
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float mglow=exp(-dot(p-mp,p-mp)*8.0)*0.10;
+  col = mix(col, WHITE, mglow);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'electric-ink',
+  name:'⑤ Whitewash (safe recolor)',
+  blurb:'The exact motion already live on your site today (same domain-warp/fbm technique — proven, no new risk), reduced to strictly navy + white and pushed paler overall. The lowest-risk option: no new animation technique, just a cleaner two-tone, white-dominant palette.',
+  frag: HEAD + NOISE_LIB + `
+vec3 pal(float t){
+  vec3 NAVY=vec3(0.045,0.09,0.22);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec3 deep=mix(NAVY,WHITE,0.40);
+  vec3 pale=mix(NAVY,WHITE,0.97);
+  return mix(deep, pale, smoothstep(0.2,0.75,t));
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 uv2=vec2(uv.x*AR,uv.y);
+  vec2 mvec=vec2(u_mouse.x*AR,u_mouse.y);
+  vec2 md=uv2-mvec; float infl=exp(-dot(md,md)*14.0);
+  vec2 uw=uv2 + vec2(-md.y,md.x)*infl*0.30 + md*infl*0.18*sin(u_time*0.35);
+  vec2 p=uw*1.55;
+  float t2=u_time*0.04;
+  vec2 q=vec2(fbm(p+t2), fbm(p+vec2(4.4,1.1)-t2));
+  vec2 r=vec2(fbm(p+1.2*q+vec2(1.7,9.2)+t2), fbm(p+1.2*q+vec2(8.3,2.8)-t2));
+  float f=fbm(p+1.3*r);
+  float t=clamp((f-0.30)*2.7,0.0,1.0);
+  vec3 col=pal(t);
+  col=mix(col, pal(clamp(t+0.18,0.0,1.0)), infl*0.5);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+/* ---- retro-gaming set: two full-colour arcade classics, two that keep the
+   site's navy/white palette but get a genuine retro treatment (dithering,
+   scanlines, posterizing) rather than just a colour swap. ---- */
+
+{
+  id:'synthwave',
+  name:'⑥ Synthwave Sunset',
+  blurb:'Full colour, unapologetically retro — an 80s-outrun sun sinking over a scrolling perspective grid, with scanlines over the whole frame. The most "retro gaming" of the set, and the most different from the current site look.',
+  frag: HEAD + `
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;   // uv.y: 0 top .. 1 bottom
+  float horizon=0.55;
+
+  vec3 skyTop=vec3(0.10,0.05,0.22);
+  vec3 skyMid=vec3(0.55,0.12,0.45);
+  vec3 skyHorizon=vec3(1.0,0.55,0.25);
+  vec3 sky=mix(skyTop,skyMid,smoothstep(0.0,0.5,uv.y));
+  sky=mix(sky,skyHorizon,smoothstep(0.4,horizon,uv.y));
+
+  float starN=hash(floor(uv*vec2(160.0,90.0)));
+  float star=step(0.997,starN)*smoothstep(horizon,0.0,uv.y);
+  sky+=star;
+
+  vec2 sunC=vec2(0.5,horizon-0.16);
+  float sunR=0.16;
+  vec2 sp=vec2(uv.x*AR-sunC.x*AR,uv.y-sunC.y);
+  float sd=length(sp);
+  float sunMask=1.0-smoothstep(sunR-0.01,sunR,sd);
+  float gapPattern=step(0.5,fract((uv.y-sunC.y)*22.0+u_time*0.15));
+  float lowerHalf=step(0.0,sp.y);            // gaps only in the lower half of the disk
+  sunMask*=mix(1.0,gapPattern,lowerHalf);
+  vec3 sunColor=mix(vec3(1.0,0.85,0.35),vec3(1.0,0.35,0.55),clamp((sp.y+sunR)/(sunR*2.0),0.0,1.0));
+  sky=mix(sky,sunColor,sunMask);
+
+  vec3 col=sky;
+  if(uv.y>horizon){
+    float g=(uv.y-horizon)/(1.0-horizon);
+    float persp=1.0/(1.0+g*6.0);
+    vec2 guv;
+    guv.x=(uv.x-0.5)*AR/max(persp,0.02);
+    guv.y=1.0/max(g,0.02)-u_time*1.2;
+    vec2 gridF=abs(fract(guv)-0.5);
+    float lineW=0.045;
+    float lx=smoothstep(lineW,0.0,gridF.x);
+    float ly=smoothstep(lineW,0.0,gridF.y);
+    float grid=max(lx,ly);
+    vec3 floorBase=mix(vec3(0.08,0.02,0.15),vec3(0.02,0.01,0.06),g);
+    vec3 gridColor=vec3(0.3,0.9,1.0);
+    col=mix(floorBase,gridColor,grid*(1.0-g*0.5));
+  }
+
+  float scan=step(1.0,mod(gl_FragCoord.y,3.0));   // discrete lines, not sin() — avoids near-Nyquist chroma artifacts on real screens/screenshots
+  col*=mix(0.85,1.0,scan);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'starfield',
+  name:'⑦ Starfield Warp',
+  blurb:'Full colour — three layers of coloured stars (cyan, magenta, warm white) drifting past at different speeds and sizes for parallax depth, classic side-scrolling shoot-em-up style, with scanlines.',
+  frag: HEAD + `
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float starLayer(vec2 uv, float density, float speed, float size, float seed){
+  vec2 guv=uv; guv.y+=u_time*speed;
+  vec2 cell=floor(guv*density);
+  vec2 f=fract(guv*density);
+  float h=hash(cell+seed);
+  vec2 starPos=vec2(hash(cell+seed+1.7),hash(cell+seed+3.1));
+  float d=length(f-starPos);
+  float twinkle=0.6+0.4*sin(u_time*3.0+h*30.0);
+  return (1.0-smoothstep(0.0,size,d))*step(0.88,h)*twinkle;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+
+  vec3 col=mix(vec3(0.02,0.01,0.06),vec3(0.06,0.02,0.14),uv.y);
+
+  float s1=starLayer(p,10.0,0.03,0.10,1.0);
+  float s2=starLayer(p,18.0,0.08,0.09,7.0);
+  float s3=starLayer(p,28.0,0.16,0.08,13.0);
+
+  col+=s1*vec3(0.4,0.85,1.0)+s2*vec3(1.0,0.45,0.85)+s3*vec3(1.0,0.95,0.5);
+
+  float scan=step(1.0,mod(gl_FragCoord.y,3.0));   // discrete lines, not sin() — avoids near-Nyquist chroma artifacts on real screens/screenshots
+  col*=mix(0.85,1.0,scan);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'pixel-dither',
+  name:'⑧ Pixel Dither Navy',
+  blurb:'Current-style option — same navy + white palette and flowing field as the other variants, but pixelated into chunky blocks and quantized through a 4×4 Bayer dither, like an old console framebuffer. Genuinely retro while staying on-brand.',
+  frag: HEAD + NOISE_LIB + `
+float bayerValue(vec2 fragXY){
+  int x=int(mod(fragXY.x,4.0));
+  int y=int(mod(fragXY.y,4.0));
+  int idx=y*4+x;
+  if(idx==0) return 0.0; if(idx==1) return 8.0; if(idx==2) return 2.0; if(idx==3) return 10.0;
+  if(idx==4) return 12.0; if(idx==5) return 4.0; if(idx==6) return 14.0; if(idx==7) return 6.0;
+  if(idx==8) return 3.0; if(idx==9) return 11.0; if(idx==10) return 1.0; if(idx==11) return 9.0;
+  if(idx==12) return 15.0; if(idx==13) return 7.0; if(idx==14) return 13.0; return 5.0;
+}
+float dithered(float t, vec2 fragXY, float levels){
+  float b=bayerValue(fragXY)/16.0-0.5;
+  float steps=levels-1.0;
+  float v=floor(t*steps+b+0.5);
+  return clamp(v/steps,0.0,1.0);
+}
+void main(){
+  vec3 NAVY=vec3(0.045,0.09,0.22);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  float PIX=3.0;
+  vec2 fragP=floor(gl_FragCoord.xy/PIX)*PIX+PIX*0.5;
+  vec2 uv=fragP/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y)*1.6;
+  float t2=u_time*0.05;
+  vec2 q=vec2(fbm(p+t2), fbm(p+vec2(4.4,1.1)-t2));
+  vec2 r=vec2(fbm(p+1.2*q+vec2(1.7,9.2)+t2), fbm(p+1.2*q+vec2(8.3,2.8)-t2));
+  float f=fbm(p+1.3*r);
+  float t=clamp((f-0.30)*2.4,0.0,1.0);
+
+  float lvl=dithered(t, gl_FragCoord.xy, 5.0);
+  vec3 col=mix(NAVY,WHITE,lvl);
+
+  float scan=step(1.0,mod(gl_FragCoord.y,3.0));
+  col*=mix(0.82,1.0,scan);
+
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'arcade-crt',
+  name:'⑨ Arcade CRT Navy',
+  blurb:'Current-style option — the polished-chrome navy/white surface from variant ③, run through a 16-bit-console treatment: posterized to 7 tones, CRT scanlines, and a soft vignette. Smoother/less blocky than ⑧, closer to an arcade cabinet monitor than a console framebuffer.',
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec3 NAVY=vec3(0.04,0.075,0.18);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y)*2.3;
+  float t=u_time*0.06;
+
+  float h=fbm(p+vec2(fbm(p+t),fbm(p-t)));
+  float e=0.015;
+  float hx=fbm(p+vec2(e,0.0)+vec2(fbm(p+vec2(e,0.0)+t),fbm(p+vec2(e,0.0)-t)))-h;
+  float hy=fbm(p+vec2(0.0,e)+vec2(fbm(p+vec2(0.0,e)+t),fbm(p+vec2(0.0,e)-t)))-h;
+  vec3 n=normalize(vec3(-hx*7.0,-hy*7.0,1.0));
+
+  vec3 lightDir=normalize(vec3(0.4,0.7,0.6));
+  float diff=max(dot(n,lightDir),0.0);
+  float spec=pow(max(dot(reflect(-lightDir,n),vec3(0.0,0.0,1.0)),0.0),46.0);
+
+  vec3 base=mix(NAVY,WHITE,clamp(diff*1.3,0.0,1.0));
+  base=mix(base,WHITE,spec*0.9);
+
+  float levels=7.0;
+  base=floor(base*levels+0.5)/levels;
+
+  float scan=step(1.0,mod(gl_FragCoord.y,3.0));   // discrete lines, not sin() — avoids near-Nyquist chroma artifacts on real screens/screenshots
+  base*=mix(0.82,1.0,scan);
+
+  vec2 vc=uv-0.5;
+  float vig=1.0-dot(vc,vc)*0.6;
+  base*=vig;
+
+  gl_FragColor=vec4(clamp(base,0.0,1.0),1.0);
+}`
+},
+
+/* ---- green set: simple, inviting, five distinct shades. Two calm/ambient (mouse
+   ignored entirely), three interactive (the pointer genuinely drives the effect,
+   not just a decorative glow), one built specifically for a forest feel. ---- */
+
+{
+  id:'sage-mist',
+  name:'⑩ Sage Mist',
+  blurb:'Lightest shade — soft sage-green metaball blobs drifting in a pale, near-white sea. NOT interactive: purely ambient, calm motion, nothing reacts to the pointer. The gentlest/simplest of the five.',
+  frag: HEAD + `
+#define N 4
+float metaball(vec2 uv, vec2 c, float r){ float d=length(uv-c); return r*r/(d*d+0.0001); }
+void main(){
+  vec3 SAGE=vec3(0.42,0.55,0.46);
+  vec3 WHITE=vec3(0.98,0.99,0.97);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+  float t=u_time*0.07;
+
+  vec2 c0=vec2(0.5+0.28*sin(t*0.8+0.0),0.45+0.24*cos(t*0.6+0.0));
+  vec2 c1=vec2(0.5+0.30*sin(t*0.5+2.4),0.55+0.28*cos(t*0.45+1.3));
+  vec2 c2=vec2(0.5+0.22*sin(t*0.65+4.0),0.42+0.20*cos(t*0.7+3.0));
+  vec2 c3=vec2(0.5+0.26*sin(t*0.4+1.2),0.58+0.24*cos(t*0.55+5.2));
+  float r0=0.16,r1=0.13,r2=0.15,r3=0.12;
+  vec2 m0=vec2(c0.x*AR,c0.y), m1=vec2(c1.x*AR,c1.y), m2=vec2(c2.x*AR,c2.y), m3=vec2(c3.x*AR,c3.y);
+
+  float field=metaball(p,m0,r0)+metaball(p,m1,r1)+metaball(p,m2,r2)+metaball(p,m3,r3);
+  float edge=smoothstep(0.9,1.3,field);
+
+  vec3 sea=mix(SAGE,WHITE,0.92);
+  vec3 blob=mix(SAGE, mix(SAGE,WHITE,0.15), clamp(field*0.35,0.0,1.0));
+  vec3 col=mix(sea,blob,edge);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'emerald-depths',
+  name:'⑪ Emerald Depths',
+  blurb:'Richest/darkest shade — deep emerald lit like polished stone, white only in the highlights. NOT interactive, same calm ambient family as Sage Mist but at the opposite end of the tonal range.',
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec3 EMERALD=vec3(0.02,0.16,0.10);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y)*2.3;
+  float t=u_time*0.055;
+  float h=fbm(p+vec2(fbm(p+t),fbm(p-t)));
+  float e=0.015;
+  float hx=fbm(p+vec2(e,0.0)+vec2(fbm(p+vec2(e,0.0)+t),fbm(p+vec2(e,0.0)-t)))-h;
+  float hy=fbm(p+vec2(0.0,e)+vec2(fbm(p+vec2(0.0,e)+t),fbm(p+vec2(0.0,e)-t)))-h;
+  vec3 n=normalize(vec3(-hx*7.0,-hy*7.0,1.0));
+  vec3 lightDir=normalize(vec3(0.4,0.7,0.6));
+  float diff=max(dot(n,lightDir),0.0);
+  float spec=pow(max(dot(reflect(-lightDir,n),vec3(0.0,0.0,1.0)),0.0),46.0);
+  // baseline diffuse (~0.6 for a mostly-flat surface facing this light) must stay
+  // deep green — this is the RICHEST/darkest shade, so only true highlights (bumps
+  // catching the light + the sharp specular term below) are allowed toward white.
+  vec3 base=mix(EMERALD, mix(EMERALD,WHITE,0.35), smoothstep(0.35,0.85,diff));
+  base=mix(base,WHITE,spec*0.85);
+  gl_FragColor=vec4(clamp(base,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'forest-canopy',
+  name:'⑫ Forest Canopy',
+  blurb:'The forest one — dark canopy green mottled like dappled leaf-light, with a warm sunbeam that follows your cursor as if light is breaking through the trees where you are, plus a few soft motes of light drifting down. Interactive: move your pointer around.',
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+  float t=u_time*0.05;
+
+  vec3 deep=vec3(0.035,0.10,0.055);
+  vec3 mid =vec3(0.10,0.26,0.13);
+  vec3 lit =vec3(0.55,0.62,0.28);
+
+  vec2 wp=p*2.6;
+  vec2 q=vec2(fbm(wp+t),fbm(wp+vec2(3.1,1.7)-t));
+  float canopy=fbm(wp+1.4*q);
+
+  vec3 col=mix(deep,mid,smoothstep(0.25,0.65,canopy));
+  col=mix(col,lit,smoothstep(0.62,0.88,canopy));
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float md=length(p-mp);
+  float beam=exp(-md*md*3.2)*0.55;
+  col=mix(col,lit,beam);
+
+  for(int i=0;i<3;i++){
+    float fi=float(i);
+    vec2 cell=vec2(3.0+fi,3.0+fi*1.3);
+    vec2 guv=p*cell;
+    guv.y+=t*(0.6+fi*0.3);
+    vec2 id=floor(guv);
+    vec2 f=fract(guv)-0.5;
+    float h=hash(id+fi*11.0);
+    vec2 off=vec2(hash(id+fi*3.0+1.0),hash(id+fi*7.0+2.0))-0.5;
+    float d=length(f-off*0.6);
+    float mote=(1.0-smoothstep(0.0,0.08,d))*step(0.85,h);
+    col+=mote*0.35*lit;
+  }
+
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'mint-sweep',
+  name:'⑬ Mint Sweep',
+  blurb:"Fresh spring-mint, brushed-panel texture like variant ②'s Brushed Pearl but green. Interactive: the bright highlight band tracks your cursor's horizontal position directly, not just a decorative glow — move left/right to slide it.",
+  frag: HEAD + NOISE_LIB + `
+void main(){
+  vec3 MINT=vec3(0.35,0.62,0.48);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+
+  vec3 base=mix(MINT,WHITE,0.72);
+  float grain=(noise(vec2(p.x*220.0,p.y*2.2))-0.5);
+  base=mix(base,MINT,clamp(-grain,0.0,1.0)*0.12);
+  base=mix(base,WHITE,clamp(grain,0.0,1.0)*0.12);
+
+  float targetX=u_mouse.x*AR;
+  float d=p.x-targetX;
+  float band=exp(-d*d*10.0);
+  vec3 col=mix(base,WHITE,band*0.6);
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float mglow=exp(-dot(p-mp,p-mp)*9.0)*0.18;
+  col=mix(col,WHITE,mglow);
+
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+{
+  id:'meadow-ripple',
+  name:'⑭ Meadow Ripple (logo blue)',
+  blurb:"Now recoloured off the logo mark (#2340c8) rather than green — a light blue tint, flat and calm until you move the pointer, when a real ripple (not just a glow) spreads out like a drop in water, plus two slow ambient ripples so it isn't completely still when idle. This is the direction now carried into meadow-ripple-demo.html.",
+  frag: HEAD + `
+void main(){
+  vec3 ROYAL=vec3(0.137,0.251,0.784);
+  vec3 WHITE=vec3(1.0,1.0,1.0);
+  vec2 uv=gl_FragCoord.xy/u_res; uv.y=1.0-uv.y;
+  vec2 p=vec2(uv.x*AR,uv.y);
+
+  vec3 base=mix(ROYAL,WHITE,0.78);
+
+  vec2 mp=vec2(u_mouse.x*AR,u_mouse.y);
+  float d=length(p-mp);
+  float ripple=(sin(d*26.0-u_time*3.2)*exp(-d*2.2))*0.5+0.5;
+  float ringMask=exp(-d*1.6);
+  vec3 col=mix(base,WHITE,ripple*ringMask*0.5);
+
+  for(int i=0;i<2;i++){
+    float fi=float(i);
+    vec2 origin=vec2(0.3+fi*0.5,0.4+fi*0.25)*vec2(AR,1.0);
+    float od=length(p-origin);
+    float phase=u_time*0.25+fi*3.0;
+    float wave=sin(od*10.0-phase*3.0);
+    float amp=smoothstep(1.4,0.0,od)*(0.5+0.5*sin(phase));
+    col=mix(col,WHITE,max(wave,0.0)*amp*0.10);
+  }
+
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}`
+},
+
+];
+
+/* ---- WebGL plumbing (shared across all variants) ---- */
+function compile(vertSrc, fragSrc){
+  function sh(type, src){
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src); gl.compileShader(s);
+    if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){
+      console.error('SHADER COMPILE ERROR:', gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  }
+  const vs = sh(gl.VERTEX_SHADER, vertSrc);
+  const fs = sh(gl.FRAGMENT_SHADER, fragSrc);
+  if(!vs || !fs) return null;
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog, gl.LINK_STATUS)){
+    console.error('PROGRAM LINK ERROR:', gl.getProgramInfoLog(prog));
+    return null;
+  }
+  return prog;
+}
+
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+let current = null;   // {prog, aPos, u_res, u_time, u_mouse}
+let mx=0.5, my=0.5;
+const t0 = performance.now();
+
+function useVariant(idx){
+  const v = VARIANTS[idx];
+  const prog = compile(VERT, v.frag);
+  if(!prog){ document.getElementById('v-blurb').textContent = 'Shader failed to compile — check console.'; return; }
+  const aPos = gl.getAttribLocation(prog, 'a_pos');
+  current = {
+    prog, aPos,
+    u_res: gl.getUniformLocation(prog,'u_res'),
+    u_time: gl.getUniformLocation(prog,'u_time'),
+    u_mouse: gl.getUniformLocation(prog,'u_mouse'),
+  };
+  document.getElementById('v-name').textContent = v.name;
+  document.getElementById('v-blurb').textContent = v.blurb;
+  document.getElementById('count').textContent = (idx+1) + ' / ' + VARIANTS.length;
+  [...document.querySelectorAll('#tabs button')].forEach((b,i) => b.classList.toggle('active', i===idx));
+  history.replaceState(null,'','#'+v.id);
+}
+
+const tabs = document.getElementById('tabs');
+VARIANTS.forEach((v,i) => {
+  const b = document.createElement('button');
+  b.textContent = v.name;
+  b.addEventListener('click', () => useVariant(i));
+  tabs.appendChild(b);
+});
+
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio||1, 1.75);
+  canvas.width = Math.floor(innerWidth*dpr);
+  canvas.height = Math.floor(innerHeight*dpr);
+  gl.viewport(0,0,canvas.width,canvas.height);
+}
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => { mx = e.clientX/innerWidth; my = e.clientY/innerHeight; });
+
+function frame(){
+  if(current){
+    gl.useProgram(current.prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.enableVertexAttribArray(current.aPos);
+    gl.vertexAttribPointer(current.aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.uniform2f(current.u_res, canvas.width, canvas.height);
+    gl.uniform1f(current.u_time, (performance.now()-t0)/1000);
+    // my is already top-down 0..1 (0=top), matching every shader's own uv.y after its
+    // internal `uv.y=1.0-uv.y` flip — passing 1.0-my here (the old code) inverted every
+    // mouse-reactive effect's vertical position relative to the real cursor.
+    gl.uniform2f(current.u_mouse, mx, my);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  }
+  requestAnimationFrame(frame);
+}
+
+resize();
+const startId = location.hash.replace('#','');
+const startIdx = Math.max(0, VARIANTS.findIndex(v => v.id === startId));
+useVariant(startIdx === -1 ? 0 : startIdx);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
