@@ -955,6 +955,17 @@ function initCharacterSequence() {
     { src: "assets/character-rotating.gif", dur: 400 },
     { src: "assets/pokemon-ball-throw.gif?v=2", dur: 1000 },
   ];
+  // preload every stage (plus the resting pose) as soon as the sequence starts, in
+  // parallel with the page's other images — on a real network (unlike a local/cached
+  // dev server) fetching a GIF from scratch can take longer than a short stage's own
+  // display window (character-rotating.gif's is only 400ms), so without this the
+  // browser aborts that fetch mid-flight the instant the next stage's src swap fires
+  // and the stage never visibly renders. Once preloaded, each swap below just paints
+  // from cache instantly, no network round-trip at swap-time.
+  [...stages.map(s => s.src), "assets/character-south.png"].forEach(src => {
+    const preload = new Image();
+    preload.src = src;
+  });
   function play(i) {
     if (i >= stages.length) { img.src = "assets/character-south.png"; return; }
     img.src = stages[i].src;
