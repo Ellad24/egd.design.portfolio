@@ -525,7 +525,7 @@ body.nav-open .site-header{transform:none!important;background:transparent!impor
   .contact-mail-icon{animation:none;}
 }
 .contact-mail{font-family:"Space Grotesk",sans-serif;font-weight:600;
-  font-size:clamp(1.7rem,6vw,4rem);color:var(--ink);word-break:break-word;display:inline-block;
+  font-size:clamp(1.12rem,5vw,3.3rem);color:var(--ink);word-break:break-word;display:inline-block;
   transition:color .3s;letter-spacing:-.02em;}
 .contact-mail:hover{color:var(--royal);}
 .socials{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;}
