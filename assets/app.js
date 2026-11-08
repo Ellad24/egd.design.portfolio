@@ -197,7 +197,7 @@ function graphicArt(c) {
       ${[80,160,240,320].map(x => `<line x1="${x}" y1="20" x2="${x}" y2="280"/>`).join("")}
       ${[75,150,225].map(y => `<line x1="20" y1="${y}" x2="380" y2="${y}"/>`).join("")}
     </g>
-    <text x="46" y="215" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="210" fill="${c}" opacity="0.9">G</text>
+    <text x="46" y="215" font-family="Cabinet Grotesk, Arial, sans-serif" font-weight="700" font-size="210" fill="${c}" opacity="0.9">G</text>
     <circle cx="300" cy="90" r="52" fill="${c}" opacity="0.85"/>
     <rect x="250" y="180" width="110" height="26" rx="13" fill="${c}" opacity="0.4"/>`;
 }
